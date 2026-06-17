@@ -1,4 +1,4 @@
-"""AI Deal Advisor — Streamlit app entry point."""
+"""AI Deal Advisor — two-page Streamlit app."""
 
 import streamlit as st
 import pandas as pd
@@ -17,216 +17,15 @@ from modules.vc_matching import score_investors
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="AI Deal Advisor",
-    page_icon="⚡",
-    layout="centered",
+    page_icon="D",
+    layout="wide",
     initial_sidebar_state="collapsed",
 )
 
-# ── CSS — light theme ─────────────────────────────────────────────────────────
-st.markdown(
-    """
-    <style>
-      /* Hide Streamlit chrome */
-      #MainMenu, footer, header { visibility: hidden; }
-      [data-testid="stSidebar"] { display: none !important; }
-
-      /* Page background */
-      html, body,
-      [data-testid="stAppViewContainer"],
-      [data-testid="stApp"],
-      [data-testid="stAppViewBlockContainer"],
-      .main { background-color: #F8FAFC !important; }
-
-      /* Global font + colour */
-      * { font-family: 'Inter', 'Segoe UI', sans-serif !important; color: #0F172A; }
-
-      /* Headings */
-      h1, h2, h3 { font-weight: 500 !important; color: #0F172A !important; }
-
-      /* Bordered card containers */
-      [data-testid="stVerticalBlockBorderWrapper"] > div:first-child {
-        background: #FFFFFF !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 12px !important;
-      }
-
-      /* Text inputs / number inputs */
-      .stTextInput > div > div > input,
-      .stNumberInput > div > div > input {
-        background: #F1F5F9 !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 8px !important;
-        color: #0F172A !important;
-        font-size: 14px !important;
-      }
-      .stTextInput > div > div > input:focus,
-      .stNumberInput > div > div > input:focus {
-        border-color: #1D4ED8 !important;
-        box-shadow: 0 0 0 3px rgba(29,78,216,0.12) !important;
-      }
-
-      /* Selectboxes */
-      .stSelectbox [data-baseweb="select"] > div {
-        background: #F1F5F9 !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 8px !important;
-        color: #0F172A !important;
-        font-size: 14px !important;
-      }
-
-      /* Labels */
-      label, .stMarkdown p { color: #0F172A !important; font-size: 13px !important; }
-
-      /* Buttons (primary) */
-      .stButton > button {
-        background: #1D4ED8 !important;
-        color: #ffffff !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: 500 !important;
-        font-size: 14px !important;
-        padding: 10px 32px !important;
-        letter-spacing: 0.02em !important;
-        transition: background 0.15s ease !important;
-      }
-      .stButton > button:hover { background: #1E40AF !important; }
-
-      /* Tabs */
-      [data-testid="stTabs"] [data-baseweb="tab-list"] {
-        background: transparent !important;
-        border-bottom: 1px solid #E2E8F0 !important;
-        gap: 4px !important;
-        padding-bottom: 0 !important;
-      }
-      [data-testid="stTabs"] [data-baseweb="tab"] {
-        background: #FFFFFF !important;
-        color: #64748B !important;
-        border: 1px solid #E2E8F0 !important;
-        border-bottom: none !important;
-        border-radius: 6px 6px 0 0 !important;
-        padding: 8px 18px !important;
-        font-size: 13px !important;
-        font-weight: 400 !important;
-      }
-      [data-testid="stTabs"] [aria-selected="true"] {
-        background: #1D4ED8 !important;
-        color: #ffffff !important;
-        border-color: #1D4ED8 !important;
-      }
-      [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
-        background: transparent !important;
-        height: 0 !important;
-      }
-
-      /* Metric cards */
-      [data-testid="metric-container"] {
-        background: #FFFFFF !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 12px !important;
-        padding: 16px !important;
-      }
-      [data-testid="stMetricValue"] {
-        color: #0F172A !important;
-        font-size: 22px !important;
-        font-weight: 500 !important;
-      }
-      [data-testid="stMetricLabel"] {
-        color: #94A3B8 !important;
-        font-size: 11px !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.06em !important;
-      }
-
-      /* DataFrames */
-      [data-testid="stDataFrame"] {
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 8px !important;
-      }
-
-      /* Divider */
-      hr { border-color: #E2E8F0 !important; margin: 1.25rem 0 !important; }
-
-      /* Expanders */
-      [data-testid="stExpander"] {
-        background: #FFFFFF !important;
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 12px !important;
-      }
-
-      /* Spinner */
-      [data-testid="stSpinner"] { color: #1D4ED8 !important; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-# ── Design tokens ─────────────────────────────────────────────────────────────
-BLUE       = "#1D4ED8"
-BLUE_LIGHT = "#93C5FD"
-BLUE_DARK  = "#1E40AF"
-GREEN      = "#22C55E"
-AMBER      = "#F59E0B"
-RED        = "#EF4444"
-
-PLOTLY_LAYOUT = dict(
-    paper_bgcolor="#FFFFFF",
-    plot_bgcolor="#FFFFFF",
-    font=dict(color="#0F172A", family="Inter, Segoe UI, sans-serif"),
-    legend=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0"),
-    margin=dict(l=20, r=20, t=40, b=20),
-)
-AXIS_STYLE = dict(gridcolor="#F1F5F9", linecolor="#E2E8F0", tickcolor="#94A3B8", color="#64748B")
-
-
-# ── Helper functions ──────────────────────────────────────────────────────────
-def fmt_gbp(val: float) -> str:
-    return f"£{val / 1_000_000:.1f}m"
-
-
-def overline(text: str) -> None:
-    st.markdown(
-        f"<p style='font-size:11px;letter-spacing:0.08em;text-transform:uppercase;"
-        f"color:#64748B;margin:0 0 10px;font-weight:400;'>{text}</p>",
-        unsafe_allow_html=True,
-    )
-
-
-def callout(text: str, kind: str = "info") -> None:
-    border_map = {"info": BLUE, "warning": AMBER, "danger": RED, "success": GREEN}
-    bc = border_map.get(kind, BLUE)
-    st.markdown(
-        f"<div style='background:#F8FAFC;border-left:3px solid {bc};border-radius:0 8px 8px 0;"
-        f"padding:14px 18px;margin:10px 0;'>"
-        f"<p style='font-size:14px;color:#0F172A;margin:0;line-height:1.6;'>{text}</p>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-
-
-def valuation_cards_html(low: float, base: float, high: float) -> str:
-    def card(label, val, primary=False):
-        border  = f"2px solid {BLUE}" if primary else "1px solid #E2E8F0"
-        lc = BLUE if primary else "#94A3B8"
-        vc = BLUE if primary else "#64748B"
-        return (
-            f"<div style='background:#FFFFFF;border:{border};border-radius:12px;"
-            f"padding:20px 16px;text-align:center;'>"
-            f"<p style='font-size:11px;color:{lc};margin:0;text-transform:uppercase;"
-            f"letter-spacing:0.06em;font-weight:400;'>{label}</p>"
-            f"<p style='font-size:22px;font-weight:500;color:{vc};margin:6px 0 0;'>{fmt_gbp(val)}</p>"
-            f"</div>"
-        )
-    return (
-        "<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0;'>"
-        + card("Conservative", low)
-        + card("Base case", base, primary=True)
-        + card("Optimistic", high)
-        + "</div>"
-    )
-
-
-# ── Session state defaults ────────────────────────────────────────────────────
+# ── Session state ─────────────────────────────────────────────────────────────
 _DEFAULTS = {
+    "page":         "home",
+    "active_tab":   "Valuation",
     "inp_company":  "FinTechX",
     "inp_sector":   "FinTech",
     "inp_stage":    "Series A",
@@ -239,580 +38,1008 @@ _DEFAULTS = {
     "inp_debt":     0,
     "inp_cod":      8,
     "inp_openai":   "",
-    "analysis_run": False,
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
         st.session_state[_k] = _v
 
+# ── CSS ───────────────────────────────────────────────────────────────────────
+st.markdown("""
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap');
 
+  /* ── Streamlit chrome removal ── */
+  #MainMenu, footer, header { visibility: hidden; }
+  [data-testid="stSidebar"]        { display: none !important; }
+  [data-testid="collapsedControl"] { display: none !important; }
+
+  /* ── Layout & background ── */
+  html, body,
+  [data-testid="stAppViewContainer"],
+  [data-testid="stApp"], .main {
+    background-color: #F8FAFC !important;
+  }
+  .main .block-container {
+    padding-top: 0 !important;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+    max-width: 100% !important;
+  }
+
+  /* ── Typography ── */
+  *, *::before, *::after {
+    font-family: 'Inter', 'SF Pro Display', -apple-system, system-ui, sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4 { font-weight: 500 !important; color: #0F172A !important; }
+  p { font-size: 14px; color: #0F172A; margin: 0; }
+  label { color: #64748B !important; font-size: 12px !important; font-weight: 400 !important; }
+
+  /* ── Inputs ── */
+  .stTextInput > div > div > input,
+  .stNumberInput > div > div > input {
+    background: #F1F5F9 !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 6px !important;
+    color: #0F172A !important;
+    font-size: 13px !important;
+  }
+  .stTextInput > div > div > input:focus,
+  .stNumberInput > div > div > input:focus {
+    border-color: #1D4ED8 !important;
+    box-shadow: 0 0 0 3px rgba(29,78,216,0.1) !important;
+  }
+  .stSelectbox [data-baseweb="select"] > div {
+    background: #F1F5F9 !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 6px !important;
+    color: #0F172A !important;
+    font-size: 13px !important;
+  }
+  .stTextInput [type="password"] {
+    background: #F1F5F9 !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 6px !important;
+  }
+
+  /* ── Buttons — default primary ── */
+  .stButton > button {
+    background: #1D4ED8 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    padding: 10px 32px !important;
+    letter-spacing: 0.01em !important;
+    transition: background 0.15s !important;
+  }
+  .stButton > button:hover { background: #1E40AF !important; }
+
+  /* ── Nav active button (wrapper trick) ── */
+  .element-container:has(.nav-active) + .element-container .stButton > button {
+    background: #1D4ED8 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    text-align: left !important;
+    padding: 9px 14px !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+  }
+
+  /* ── Nav inactive button (wrapper trick) ── */
+  .element-container:has(.nav-inactive) + .element-container .stButton > button {
+    background: transparent !important;
+    color: #64748B !important;
+    border: none !important;
+    border-radius: 6px !important;
+    text-align: left !important;
+    padding: 9px 14px !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-start !important;
+  }
+  .element-container:has(.nav-inactive) + .element-container .stButton > button:hover {
+    background: #F1F5F9 !important;
+    color: #0F172A !important;
+  }
+
+  /* ── Top nav button (app title link) ── */
+  .element-container:has(.topnav-link) + .element-container .stButton > button {
+    background: transparent !important;
+    color: #1D4ED8 !important;
+    border: none !important;
+    padding: 0 4px !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    box-shadow: none !important;
+    height: auto !important;
+    min-height: unset !important;
+    line-height: 1 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 2px !important;
+  }
+  .element-container:has(.topnav-link) + .element-container .stButton > button:hover {
+    background: transparent !important;
+    color: #1E40AF !important;
+  }
+
+  /* ── Demo-company buttons ── */
+  .element-container:has(.demo-btn) + .element-container .stButton > button {
+    background: #FFFFFF !important;
+    color: #1D4ED8 !important;
+    border: 1px solid #BFDBFE !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    padding: 7px 16px !important;
+  }
+  .element-container:has(.demo-btn) + .element-container .stButton > button:hover {
+    background: #EFF6FF !important;
+  }
+
+  /* ── Back button ── */
+  .element-container:has(.back-link) + .element-container .stButton > button {
+    background: transparent !important;
+    color: #64748B !important;
+    border: none !important;
+    padding: 0 4px !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    box-shadow: none !important;
+    height: auto !important;
+    min-height: unset !important;
+  }
+  .element-container:has(.back-link) + .element-container .stButton > button:hover {
+    color: #0F172A !important;
+    background: transparent !important;
+  }
+
+  /* ── Cards (bordered container) ── */
+  [data-testid="stVerticalBlockBorderWrapper"] > div:first-child {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 8px !important;
+  }
+
+  /* ── Metric cards ── */
+  [data-testid="metric-container"] {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+  }
+  [data-testid="stMetricValue"]  { color: #0F172A !important; font-size: 26px !important; font-weight: 500 !important; }
+  [data-testid="stMetricLabel"]  { color: #94A3B8 !important; font-size: 11px !important; text-transform: uppercase !important; letter-spacing: 0.06em !important; }
+
+  /* ── DataFrames ── */
+  [data-testid="stDataFrame"] { border: 1px solid #E2E8F0 !important; border-radius: 8px !important; }
+
+  /* ── Dividers ── */
+  hr { border-color: #E2E8F0 !important; margin: 1rem 0 !important; }
+
+  /* ── Expanders ── */
+  [data-testid="stExpander"] {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 8px !important;
+  }
+</style>
+""", unsafe_allow_html=True)
+
+# ── Design tokens ─────────────────────────────────────────────────────────────
+BLUE      = "#1D4ED8"
+BLUE_MID  = "#3B82F6"
+GREEN     = "#10B981"
+AMBER     = "#F59E0B"
+PURPLE    = "#8B5CF6"
+RED       = "#EF4444"
+
+PLOTLY_BASE = dict(
+    paper_bgcolor="#FFFFFF",
+    plot_bgcolor="#FFFFFF",
+    font=dict(color="#0F172A", family="Inter, system-ui, sans-serif"),
+    legend=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0"),
+    margin=dict(l=0, r=0, t=30, b=0),
+)
+AXIS_CLEAN = dict(showgrid=False, zeroline=False, linecolor="#E2E8F0",
+                  tickcolor="#94A3B8", color="#64748B")
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+def fmt_gbp(val: float) -> str:
+    return f"£{val / 1_000_000:.1f}m"
+
+
+def overline(text: str) -> None:
+    st.markdown(
+        f"<p style='font-size:11px;letter-spacing:0.08em;text-transform:uppercase;"
+        f"color:#64748B;margin:0 0 8px;'>{text}</p>",
+        unsafe_allow_html=True,
+    )
+
+
+def section_header(title: str, subtitle: str = "") -> None:
+    html = (f"<h2 style='font-size:22px;font-weight:500;color:#0F172A;"
+            f"margin:0 0 4px;'>{title}</h2>")
+    if subtitle:
+        html += (f"<p style='font-size:13px;color:#64748B;"
+                 f"margin:0 0 20px;'>{subtitle}</p>")
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def callout(text: str, kind: str = "info") -> None:
+    bc = {"info": BLUE, "warning": AMBER, "danger": RED, "success": GREEN}.get(kind, BLUE)
+    st.markdown(
+        f"<div style='background:#F8FAFC;border-left:3px solid {bc};"
+        f"border-radius:0 8px 8px 0;padding:12px 16px;margin:8px 0;'>"
+        f"<p style='font-size:13px;color:#0F172A;margin:0;line-height:1.6;'>{text}</p>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def card_html(label: str, value: str, sub: str = "",
+              border: str = "1px solid #E2E8F0",
+              val_color: str = "#0F172A") -> str:
+    return (
+        f"<div style='background:#FFFFFF;border:{border};border-radius:8px;"
+        f"padding:16px;'>"
+        f"<p style='font-size:10px;letter-spacing:0.08em;text-transform:uppercase;"
+        f"color:#94A3B8;margin:0 0 6px;'>{label}</p>"
+        f"<p style='font-size:26px;font-weight:500;color:{val_color};"
+        f"margin:0;'>{value}</p>"
+        + (f"<p style='font-size:11px;color:#94A3B8;margin:4px 0 0;'>{sub}</p>" if sub else "")
+        + "</div>"
+    )
+
+
+def _nav_btn(label: str, is_active: bool, key: str) -> bool:
+    cls = "nav-active" if is_active else "nav-inactive"
+    st.markdown(f'<div class="{cls}" style="display:none;"></div>', unsafe_allow_html=True)
+    return st.button(label, key=key, use_container_width=True)
+
+
+# ── Preset callbacks ──────────────────────────────────────────────────────────
 def _load_preset(name: str) -> None:
     presets = {
-        "FinTechX": dict(inp_company="FinTechX",  inp_sector="FinTech",    inp_stage="Series A",
-                         inp_geo="UK", inp_revenue=4_000_000,  inp_growth=80,  inp_ebitda=15),
-        "CloudBase": dict(inp_company="CloudBase", inp_sector="SaaS",       inp_stage="Series B",
-                          inp_geo="UK", inp_revenue=12_000_000, inp_growth=55,  inp_ebitda=8),
-        "HealthOS":  dict(inp_company="HealthOS",  inp_sector="HealthTech", inp_stage="Seed",
-                          inp_geo="UK", inp_revenue=800_000,   inp_growth=120, inp_ebitda=-30),
+        "FinTechX":  dict(inp_company="FinTechX",  inp_sector="FinTech",
+                          inp_stage="Series A", inp_geo="UK",
+                          inp_revenue=4_000_000,  inp_growth=80,  inp_ebitda=15,
+                          inp_cash=1_500_000, inp_burn=200_000),
+        "CloudBase": dict(inp_company="CloudBase", inp_sector="SaaS",
+                          inp_stage="Series B", inp_geo="UK",
+                          inp_revenue=12_000_000, inp_growth=55,  inp_ebitda=8,
+                          inp_cash=3_000_000, inp_burn=400_000),
+        "HealthOS":  dict(inp_company="HealthOS",  inp_sector="HealthTech",
+                          inp_stage="Seed",     inp_geo="UK",
+                          inp_revenue=800_000,   inp_growth=120, inp_ebitda=-30,
+                          inp_cash=600_000, inp_burn=80_000),
     }
     for k, v in presets[name].items():
         st.session_state[k] = v
-    st.session_state.analysis_run = False  # reset so user clicks Run again
 
 
-# ═══════════════════════════════════════════════════════════════════
-# HEADER
-# ═══════════════════════════════════════════════════════════════════
-st.markdown(
-    f"<div style='text-align:center;padding:32px 0 20px;border-bottom:1px solid #E2E8F0;"
-    f"margin-bottom:24px;'>"
-    f"<div style='display:inline-flex;align-items:center;gap:10px;'>"
-    f"<span style='font-size:24px;'>⚡</span>"
-    f"<span style='font-size:28px;font-weight:500;color:#0F172A;'>AI Deal Advisor</span>"
-    f"</div>"
-    f"<p style='font-size:14px;color:#64748B;margin:6px 0 0;font-size:13px;'>"
-    f"Institutional-grade analysis at junior analyst speed</p>"
-    f"</div>",
-    unsafe_allow_html=True,
-)
+# ── Top nav bar ───────────────────────────────────────────────────────────────
+def render_topnav(company: str = "") -> None:
+    breadcrumb = (
+        f"<span style='color:#94A3B8;margin:0 6px;'>/</span>"
+        f"<span style='font-size:14px;color:#64748B;'>{company} analysis</span>"
+    ) if company else ""
 
-# ── Demo company buttons ──────────────────────────────────────────────────────
-st.markdown(
-    "<p style='font-size:11px;letter-spacing:0.08em;text-transform:uppercase;"
-    "color:#94A3B8;text-align:center;margin:0 0 8px;'>Quick-load demo company</p>",
-    unsafe_allow_html=True,
-)
-_d1, _d2, _d3 = st.columns(3)
-_d1.button("⚡ FinTechX",  on_click=_load_preset, args=("FinTechX",),  use_container_width=True)
-_d2.button("☁️ CloudBase", on_click=_load_preset, args=("CloudBase",), use_container_width=True)
-_d3.button("🏥 HealthOS",  on_click=_load_preset, args=("HealthOS",),  use_container_width=True)
-
-st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
-
-# ═══════════════════════════════════════════════════════════════════
-# SECTION 1 — COMPANY PROFILE
-# ═══════════════════════════════════════════════════════════════════
-with st.container(border=True):
-    overline("🏢  Company profile")
-    _c1, _c2, _c3, _c4 = st.columns(4)
-    company_name = _c1.text_input("Company name",  key="inp_company")
-    sector       = _c2.selectbox("Sector",
-        ["FinTech", "SaaS", "HealthTech", "EdTech", "CleanTech",
-         "E-Commerce", "DeepTech", "Cybersecurity", "MarketPlace", "Other"],
-        key="inp_sector",
-    )
-    stage        = _c3.selectbox("Stage",
-        ["Pre-Seed", "Seed", "Series A", "Series B", "Series C+", "Growth"],
-        key="inp_stage",
-    )
-    geography    = _c4.selectbox("Geography",
-        ["UK", "Europe", "US", "Asia", "Global", "MENA", "LatAm"],
-        key="inp_geo",
-    )
-
-# ═══════════════════════════════════════════════════════════════════
-# SECTION 2 — FINANCIALS
-# ═══════════════════════════════════════════════════════════════════
-with st.container(border=True):
-    overline("📊  Financials")
-    _f1, _f2, _f3 = st.columns(3)
-    revenue      = _f1.number_input("Annual Revenue (£)", min_value=0,    key="inp_revenue", step=100_000, format="%d")
-    growth_pct   = _f2.number_input("Revenue Growth (%)", min_value=-100, key="inp_growth",  step=5)
-    ebitda_margin= _f3.number_input("EBITDA Margin (%)",  min_value=-100, key="inp_ebitda",  step=1)
-
-# ═══════════════════════════════════════════════════════════════════
-# SECTION 3 — OPTIONAL: RUNWAY & CAPITAL STRUCTURE
-# ═══════════════════════════════════════════════════════════════════
-with st.expander("Optional: Runway & Capital Structure"):
-    overline("💰  Cash & debt")
-    _o1, _o2, _o3, _o4 = st.columns(4)
-    cash       = _o1.number_input("Cash on hand (£)",  min_value=0, key="inp_cash",  step=100_000,  format="%d")
-    burn       = _o2.number_input("Monthly burn (£)",  min_value=0, key="inp_burn",  step=10_000,   format="%d")
-    total_debt = _o3.number_input("Total debt (£)",    min_value=0, key="inp_debt",  step=50_000,   format="%d")
-    cost_of_debt=_o4.number_input("Cost of debt (%)",  min_value=1, key="inp_cod",   step=1, max_value=20)
     st.markdown(
-        "<p style='font-size:12px;color:#94A3B8;margin:4px 0 0;'>"
-        "Leave debt at £0 if the company has no meaningful debt — equity-only assumption will apply.</p>",
-        unsafe_allow_html=True,
-    )
-
-# ═══════════════════════════════════════════════════════════════════
-# SECTION 4 — SETTINGS
-# ═══════════════════════════════════════════════════════════════════
-with st.expander("Settings"):
-    overline("🔑  API keys")
-    openai_key = st.text_input(
-        "OpenAI API Key (enables Memo & M&A tabs)",
-        key="inp_openai",
-        type="password",
-        placeholder="sk-...",
-    )
-
-st.markdown("<div style='margin:12px 0;'></div>", unsafe_allow_html=True)
-
-# ── Derived sidebar-equivalent values ────────────────────────────────────────
-runway_months = int(cash / burn) if burn > 0 else 999
-
-# ── Run Analysis button ───────────────────────────────────────────────────────
-_btn_l, _btn_m, _btn_r = st.columns([1, 2, 1])
-with _btn_m:
-    if st.button("⚡  Run analysis", use_container_width=True):
-        st.session_state.analysis_run = True
-    if st.session_state.analysis_run:
-        st.markdown(
-            "<p style='font-size:11px;color:#94A3B8;text-align:center;margin:4px 0 0;'>"
-            "Results auto-update as you change inputs above</p>",
-            unsafe_allow_html=True,
-        )
-
-# ═══════════════════════════════════════════════════════════════════
-# RESULTS (shown only after Run Analysis)
-# ═══════════════════════════════════════════════════════════════════
-if not st.session_state.analysis_run:
-    st.stop()
-
-# ── Compute valuations ────────────────────────────────────────────────────────
-company_inputs = CompanyInputs(
-    stage=stage,
-    total_debt_gbp=float(total_debt) if total_debt > 0 else None,
-    cost_of_debt_pct=float(cost_of_debt),
-)
-dcf   = dcf_valuation(revenue, growth_pct, ebitda_margin, company_inputs)
-comps = comparable_valuation(revenue, sector)
-blend = blended_valuation(dcf, comps)
-
-st.markdown("<hr/>", unsafe_allow_html=True)
-
-# ── Headline valuation cards ──────────────────────────────────────────────────
-st.markdown(
-    "<p style='font-size:11px;letter-spacing:0.08em;text-transform:uppercase;"
-    f"color:{BLUE};margin:0 0 4px;font-weight:400;'>📈  Results — Blended valuation</p>",
-    unsafe_allow_html=True,
-)
-st.markdown(
-    valuation_cards_html(blend["low"], blend["base"], blend["high"]),
-    unsafe_allow_html=True,
-)
-
-# ── DCF + Comparables summary row ─────────────────────────────────────────────
-_s1, _s2 = st.columns(2)
-with _s1:
-    st.markdown(
-        f"<div style='background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:16px;'>"
-        f"<p style='font-size:11px;color:#94A3B8;margin:0;text-transform:uppercase;letter-spacing:0.06em;'>DCF valuation</p>"
-        f"<p style='font-size:20px;font-weight:500;color:#0F172A;margin:6px 0 4px;'>{fmt_gbp(dcf['base'])}</p>"
-        f"<p style='font-size:12px;color:#64748B;margin:0;'>WACC {blend['wacc']*100:.1f}% · 5yr projection</p>"
+        f"<div style='background:#FFFFFF;border-bottom:1px solid #E2E8F0;"
+        f"padding:14px 0;margin-bottom:20px;display:flex;"
+        f"align-items:center;justify-content:space-between;'>"
+        f"<div style='display:flex;align-items:center;gap:0;'>"
+        f"<div style='width:28px;height:28px;background:{BLUE};border-radius:6px;"
+        f"display:inline-flex;align-items:center;justify-content:center;"
+        f"color:#fff;font-size:13px;font-weight:500;margin-right:10px;'>D</div>"
+        f"<span id='nav-app-name' style='font-size:16px;font-weight:500;"
+        f"color:{BLUE};cursor:pointer;'>&nbsp;</span>"
+        f"{breadcrumb}"
+        f"</div>"
+        f"<span style='font-size:13px;color:#94A3B8;'>Settings</span>"
         f"</div>",
         unsafe_allow_html=True,
     )
-with _s2:
-    sector_multiples = {
-        "FinTech": 7.0, "SaaS": 9.0, "HealthTech": 6.0, "EdTech": 4.5,
-        "CleanTech": 5.5, "E-Commerce": 3.0, "DeepTech": 8.0,
-        "Cybersecurity": 9.5, "MarketPlace": 4.0, "Other": 4.0,
-    }
-    mult = sector_multiples.get(sector, 4.0)
+    # Functional navigation button — styled via CSS to blend with nav bar
+    st.markdown('<div class="topnav-link" style="display:none;"></div>',
+                unsafe_allow_html=True)
+    if st.button("AI Deal Advisor", key="topnav_home_btn"):
+        st.session_state.page = "home"
+        st.session_state.active_tab = "Valuation"
+        st.rerun()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HOME PAGE
+# ══════════════════════════════════════════════════════════════════════════════
+def render_home() -> None:
+    render_topnav()
+
+    # ── Demo quick-load ──
     st.markdown(
-        f"<div style='background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:16px;'>"
-        f"<p style='font-size:11px;color:#94A3B8;margin:0;text-transform:uppercase;letter-spacing:0.06em;'>Comparable multiples</p>"
-        f"<p style='font-size:20px;font-weight:500;color:#0F172A;margin:6px 0 4px;'>{fmt_gbp(comps['base'])}</p>"
-        f"<p style='font-size:12px;color:#64748B;margin:0;'>{mult:.1f}x EV/Rev · {sector} sector</p>"
-        f"</div>",
+        "<p style='font-size:11px;letter-spacing:0.08em;text-transform:uppercase;"
+        "color:#94A3B8;margin:0 0 8px;text-align:center;'>Quick-load demo</p>",
+        unsafe_allow_html=True,
+    )
+    _qd1, _qd2, _qd3, _qd4, _qd5 = st.columns([3, 1, 1, 1, 3])
+    for col, name in [(_qd2, "FinTechX"), (_qd3, "CloudBase"), (_qd4, "HealthOS")]:
+        with col:
+            st.markdown('<div class="demo-btn" style="display:none;"></div>',
+                        unsafe_allow_html=True)
+            if st.button(name, key=f"demo_{name}", use_container_width=True):
+                _load_preset(name)
+                st.rerun()
+
+    st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
+
+    # ── Page heading ──
+    st.markdown(
+        "<h1 style='font-size:28px;font-weight:500;color:#0F172A;margin:0 0 6px;'>"
+        "Enter company details</h1>"
+        "<p style='font-size:14px;color:#64748B;margin:0 0 24px;'>"
+        "Provide financial and contextual information to generate your analysis</p>",
         unsafe_allow_html=True,
     )
 
-st.markdown("<div style='margin:16px 0;'></div>", unsafe_allow_html=True)
+    # ── Three input cards ──
+    card1, card2, card3 = st.columns(3)
 
-# ── Tabs ──────────────────────────────────────────────────────────────────────
-tab_val, tab_fund, tab_vc, tab_memo, tab_ma = st.tabs(
-    ["Valuation", "Fundraising", "VC matching", "Investment memo", "M&A analysis"]
-)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# TAB 1 — VALUATION
-# ═══════════════════════════════════════════════════════════════════
-with tab_val:
-    st.markdown(f"<h2 style='font-size:20px;margin:16px 0 4px;'>Valuation analysis</h2>", unsafe_allow_html=True)
-    st.markdown(
-        f"<p style='font-size:14px;color:#64748B;margin:0 0 16px;'>"
-        f"£{revenue/1e6:.1f}m revenue · {growth_pct}% growth · {ebitda_margin}% EBITDA margin</p>",
-        unsafe_allow_html=True,
-    )
-
-    # WACC callout
-    wacc_kind = "info" if "equity-only" in blend["wacc_method"].lower() else "success"
-    callout(f"⚙️ <b>WACC: {blend['wacc']*100:.1f}%</b> — {blend['wacc_method']}", kind=wacc_kind)
-
-    st.markdown("---")
-
-    # DCF + Comps charts
-    col_l, col_r = st.columns(2)
-
-    with col_l:
-        overline("DCF valuation — three scenarios")
-        dcf_df = pd.DataFrame({
-            "Scenario": ["🔴 Conservative", "🟡 Base", "🟢 Optimistic"],
-            "Value (£m)": [round(dcf["low"]/1e6,1), round(dcf["base"]/1e6,1), round(dcf["high"]/1e6,1)],
-        })
-        st.dataframe(dcf_df, hide_index=True, use_container_width=True)
-
-        fig_dcf = go.Figure(go.Bar(
-            x=["Conservative", "Base", "Optimistic"],
-            y=[dcf["low"]/1e6, dcf["base"]/1e6, dcf["high"]/1e6],
-            marker_color=[BLUE_LIGHT, BLUE, BLUE_DARK],
-            text=[f"£{v/1e6:.1f}m" for v in [dcf["low"], dcf["base"], dcf["high"]]],
-            textposition="outside",
-        ))
-        fig_dcf.update_layout(title="DCF Scenarios (£m)", xaxis=AXIS_STYLE, yaxis=AXIS_STYLE, **PLOTLY_LAYOUT)
-        st.plotly_chart(fig_dcf, use_container_width=True)
-
-    with col_r:
-        overline("Comparable multiples — three scenarios")
-        sector_mult_table = {
-            "FinTech": {"low":4.0,"base":7.0,"high":12.0}, "SaaS": {"low":5.0,"base":9.0,"high":15.0},
-            "HealthTech": {"low":3.5,"base":6.0,"high":10.0}, "EdTech": {"low":2.5,"base":4.5,"high":8.0},
-            "CleanTech": {"low":3.0,"base":5.5,"high":9.0}, "E-Commerce": {"low":1.5,"base":3.0,"high":5.5},
-            "DeepTech": {"low":4.0,"base":8.0,"high":14.0}, "Cybersecurity": {"low":5.0,"base":9.5,"high":16.0},
-            "MarketPlace": {"low":2.0,"base":4.0,"high":7.0}, "Other": {"low":2.0,"base":4.0,"high":7.0},
-        }
-        m = sector_mult_table.get(sector, sector_mult_table["Other"])
-        comps_df = pd.DataFrame({
-            "Scenario": ["🔴 Conservative", "🟡 Base", "🟢 Optimistic"],
-            "EV/Rev": [m["low"], m["base"], m["high"]],
-            "Value (£m)": [round(comps["low"]/1e6,1), round(comps["base"]/1e6,1), round(comps["high"]/1e6,1)],
-        })
-        st.dataframe(comps_df, hide_index=True, use_container_width=True)
-
-        fig_comps = go.Figure(go.Bar(
-            x=["Conservative", "Base", "Optimistic"],
-            y=[comps["low"]/1e6, comps["base"]/1e6, comps["high"]/1e6],
-            marker_color=[BLUE_LIGHT, BLUE, BLUE_DARK],
-            text=[f"£{v/1e6:.1f}m" for v in [comps["low"], comps["base"], comps["high"]]],
-            textposition="outside",
-        ))
-        fig_comps.update_layout(title="Comparable Multiples (£m)", xaxis=AXIS_STYLE, yaxis=AXIS_STYLE, **PLOTLY_LAYOUT)
-        st.plotly_chart(fig_comps, use_container_width=True)
-
-    st.markdown("---")
-    overline("Blended valuation — DCF 50% / Comparables 50%")
-
-    fig_blend = go.Figure()
-    scenarios = ["Conservative", "Base", "Optimistic"]
-    fig_blend.add_trace(go.Bar(name="DCF",          x=scenarios, y=[dcf["low"]/1e6,   dcf["base"]/1e6,   dcf["high"]/1e6],   marker_color=BLUE_LIGHT))
-    fig_blend.add_trace(go.Bar(name="Comparables",  x=scenarios, y=[comps["low"]/1e6, comps["base"]/1e6, comps["high"]/1e6], marker_color=BLUE))
-    fig_blend.add_trace(go.Bar(name="Blended",      x=scenarios, y=[blend["low"]/1e6, blend["base"]/1e6, blend["high"]/1e6], marker_color=BLUE_DARK))
-    fig_blend.update_layout(barmode="group", title="Blended Valuation (£m)", xaxis=AXIS_STYLE, yaxis=AXIS_STYLE, **PLOTLY_LAYOUT)
-    st.plotly_chart(fig_blend, use_container_width=True)
-
-    st.markdown("---")
-    overline("5-year projection")
-
-    proj_df = five_year_projection(revenue, growth_pct, ebitda_margin)
-    st.dataframe(proj_df, hide_index=True, use_container_width=True)
-
-    fig_proj = go.Figure()
-    fig_proj.add_trace(go.Scatter(
-        x=proj_df["Year"], y=proj_df["Revenue (£m)"],
-        mode="lines+markers+text", name="Revenue",
-        line=dict(color=BLUE, width=3),
-        text=[f"£{v}m" for v in proj_df["Revenue (£m)"]],
-        textposition="top center",
-    ))
-    fig_proj.add_trace(go.Scatter(
-        x=proj_df["Year"], y=proj_df["EBITDA (£m)"],
-        mode="lines+markers+text", name="EBITDA",
-        line=dict(color=BLUE_LIGHT, width=2, dash="dot"),
-        text=[f"£{v}m" for v in proj_df["EBITDA (£m)"]],
-        textposition="bottom center",
-    ))
-    fig_proj.update_layout(title="5-Year Revenue & EBITDA (£m)", xaxis=AXIS_STYLE, yaxis=AXIS_STYLE, **PLOTLY_LAYOUT)
-    st.plotly_chart(fig_proj, use_container_width=True)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# TAB 2 — FUNDRAISING
-# ═══════════════════════════════════════════════════════════════════
-with tab_fund:
-    st.markdown("<h2 style='font-size:20px;margin:16px 0 16px;'>Fundraising analysis</h2>", unsafe_allow_html=True)
-
-    # Runway gauge
-    gauge_color = RED if runway_months < 12 else GREEN if runway_months >= 18 else AMBER
-    fig_gauge = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=runway_months,
-        domain={"x": [0, 1], "y": [0, 1]},
-        title={"text": "Runway (months)", "font": {"color": "#64748B", "size": 14}},
-        gauge={
-            "axis": {"range": [0, 36], "tickcolor": "#94A3B8", "tickfont": {"color": "#94A3B8"}},
-            "bar": {"color": gauge_color},
-            "bgcolor": "#F1F5F9",
-            "bordercolor": "#E2E8F0",
-            "steps": [
-                {"range": [0, 12],  "color": "#FEE2E2"},
-                {"range": [12, 18], "color": "#FEF3C7"},
-                {"range": [18, 36], "color": "#DCFCE7"},
-            ],
-            "threshold": {"line": {"color": BLUE, "width": 3}, "value": 18},
-        },
-        number={"font": {"color": gauge_color, "size": 48}},
-    ))
-    fig_gauge.update_layout(paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
-                            font=dict(color="#0F172A"), height=280,
-                            margin=dict(l=20, r=20, t=40, b=20))
-    st.plotly_chart(fig_gauge, use_container_width=True)
-
-    st.markdown("---")
-
-    recommended_raise  = burn * 18
-    dilution_estimate  = 0.20 if stage == "Seed" else 0.15 if stage == "Series A" else 0.12
-    post_money         = blend["base"] + recommended_raise
-
-    _m1, _m2, _m3 = st.columns(3)
-    _m1.metric("Recommended raise", fmt_gbp(recommended_raise), help="18 months runway at current burn")
-    _m2.metric("Estimated dilution", f"{dilution_estimate*100:.0f}%", help="Typical for this stage")
-    _m3.metric("Post-money (base)",  fmt_gbp(post_money))
-
-    st.markdown("---")
-    overline("Suggested use of funds")
-
-    categories = ["Engineering & Product", "Sales & Marketing", "Operations", "G&A / Legal", "Reserve"]
-    weights    = [0.40, 0.30, 0.15, 0.10, 0.05]
-    amounts    = [recommended_raise * w for w in weights]
-
-    fig_pie = go.Figure(go.Pie(
-        labels=categories, values=amounts, hole=0.45,
-        marker=dict(colors=[BLUE, BLUE_LIGHT, BLUE_DARK, "#60A5FA", "#BFDBFE"]),
-        textinfo="label+percent", textfont=dict(color="#0F172A", size=12),
-    ))
-    fig_pie.update_layout(title=f"Use of {fmt_gbp(recommended_raise)} raise",
-                          showlegend=False, **PLOTLY_LAYOUT)
-    st.plotly_chart(fig_pie, use_container_width=True)
-
-    uof_df = pd.DataFrame({
-        "Category":   categories,
-        "Allocation": [f"{w*100:.0f}%" for w in weights],
-        "Amount (£)": [f"£{a:,.0f}" for a in amounts],
-    })
-    st.dataframe(uof_df, hide_index=True, use_container_width=True)
-
-    st.markdown("---")
-    overline("Cash runway bridge")
-
-    _months     = list(range(0, min(runway_months + 1, 37)))
-    _cash_vals  = [max(cash - burn * mo, 0) for mo in _months]
-    fig_burn = go.Figure()
-    fig_burn.add_trace(go.Scatter(
-        x=_months, y=[c/1e6 for c in _cash_vals],
-        fill="tozeroy", mode="lines",
-        line=dict(color=BLUE, width=2),
-        fillcolor="rgba(29,78,216,0.08)",
-        name="Cash (£m)",
-    ))
-    fig_burn.add_vline(x=12, line_dash="dot", line_color=RED,
-                       annotation_text="12-month warning", annotation_font_color=RED)
-    if runway_months < 36:
-        fig_burn.add_vline(x=runway_months, line_dash="dash", line_color=AMBER,
-                           annotation_text=f"Zero cash (M{runway_months})",
-                           annotation_font_color=AMBER)
-    fig_burn.update_layout(
-        title="Cash balance over time (£m)",
-        xaxis=dict(title="Month", **AXIS_STYLE),
-        yaxis=dict(title="£m", **AXIS_STYLE),
-        **PLOTLY_LAYOUT,
-    )
-    st.plotly_chart(fig_burn, use_container_width=True)
-
-    st.markdown("---")
-    overline("Fundraising readiness checklist")
-    tips = [
-        ("Pitch deck ready",     runway_months > 6,   "Start fundraise now" if runway_months > 6 else "Start immediately"),
-        ("Runway > 18 months",   runway_months >= 18, f"{runway_months} months remaining" if runway_months >= 18 else f"Only {runway_months} months — raise urgently"),
-        ("Revenue traction",     revenue > 0,         fmt_gbp(revenue) + " ARR"),
-        ("High growth rate",     growth_pct >= 50,    f"{growth_pct}% YoY growth"),
-        ("EBITDA visibility",    ebitda_margin >= 0,  f"{ebitda_margin}% margin"),
-    ]
-    for label, ok, note in tips:
-        icon  = "✅" if ok else "⚠️"
-        kind  = "success" if ok else "warning"
-        callout(f"{icon} <b>{label}</b> — {note}", kind=kind)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# TAB 3 — VC MATCHING
-# ═══════════════════════════════════════════════════════════════════
-with tab_vc:
-    st.markdown(f"<h2 style='font-size:20px;margin:16px 0 4px;'>VC matching</h2>", unsafe_allow_html=True)
-    st.markdown(
-        f"<p style='font-size:14px;color:#64748B;margin:0 0 16px;'>"
-        f"Scoring investors for <b style='color:#0F172A;'>{company_name}</b> · {sector} · {stage} · {geography}</p>",
-        unsafe_allow_html=True,
-    )
-
-    csv_path = os.path.join(os.path.dirname(__file__), "data", "vc_database.csv")
-    try:
-        vc_df = pd.read_csv(csv_path)
-    except FileNotFoundError:
-        st.error(f"VC database not found at {csv_path}")
-        st.stop()
-
-    scored = score_investors(vc_df, sector, stage, geography, revenue)
-    top10  = scored.head(10).copy()
-
-    callout(f"<b>{len(scored)} investors</b> analysed · Showing top 10 matches", kind="info")
-
-    st.markdown("---")
-    overline("Match scores — top 10")
-
-    fig_vc = go.Figure(go.Bar(
-        x=top10["Score /100"],
-        y=top10["Investor"],
-        orientation="h",
-        marker=dict(
-            color=top10["Score /100"],
-            colorscale=[[0, BLUE_LIGHT], [1.0, BLUE_DARK]],
-            showscale=False,
-        ),
-        text=[f"{s}/100" for s in top10["Score /100"]],
-        textposition="outside",
-    ))
-    fig_vc.update_layout(
-        title="Top 10 investor match scores",
-        xaxis=dict(title="Score /100", **AXIS_STYLE),
-        yaxis=dict(autorange="reversed", **AXIS_STYLE),
-        **PLOTLY_LAYOUT,
-    )
-    st.plotly_chart(fig_vc, use_container_width=True)
-
-    st.markdown("---")
-    overline("Investor detail table")
-    display_cols = ["Investor", "Type", "Score /100", "Sector Fit",
-                    "Stage Fit", "Geo Fit", "Cheque Fit",
-                    "Min Cheque (£m)", "Max Cheque (£m)"]
-    st.dataframe(top10[display_cols].reset_index(drop=True),
-                 hide_index=True, use_container_width=True)
-
-    st.markdown("---")
-    overline("Score breakdown — top 5 investors")
-    st.markdown(
-        "<p style='font-size:12px;color:#64748B;margin:0 0 12px;'>"
-        "Sector <b>/40</b> · Stage <b>/30</b> · Geography <b>/20</b> · Cheque size <b>/10</b></p>",
-        unsafe_allow_html=True,
-    )
-
-    radar_traces = []
-    _colors = [BLUE, BLUE_LIGHT, BLUE_DARK, "#60A5FA", "#BFDBFE"]
-    for i, (_, row) in enumerate(top10.head(5).iterrows()):
-        radar_traces.append(go.Scatterpolar(
-            r=[row["Sector Fit"], row["Stage Fit"], row["Geo Fit"], row["Cheque Fit"]],
-            theta=["Sector (40)", "Stage (30)", "Geo (20)", "Cheque (10)"],
-            fill="toself", name=row["Investor"],
-            line=dict(color=_colors[i]),
-            fillcolor=_colors[i].replace("#", "rgba(").replace(")", ",0.08)") if False else "rgba(0,0,0,0)",
-        ))
-
-    fig_radar = go.Figure(radar_traces)
-    fig_radar.update_layout(
-        polar=dict(
-            bgcolor="#F8FAFC",
-            radialaxis=dict(visible=True, range=[0, 40], color="#94A3B8", gridcolor="#E2E8F0"),
-            angularaxis=dict(color="#64748B", gridcolor="#E2E8F0"),
-        ),
-        title="Score breakdown — top 5 investors",
-        **PLOTLY_LAYOUT,
-    )
-    st.plotly_chart(fig_radar, use_container_width=True)
-
-    st.markdown("---")
-    overline("Quick links")
-    for _, row in top10.iterrows():
-        url = row.get("Website", "")
-        if url:
-            st.markdown(
-                f"[🔗 {row['Investor']}]({url}) — **{row['Score /100']}/100**"
+    with card1:
+        with st.container(border=True):
+            overline("Company profile")
+            company_name = st.text_input("Name",   key="inp_company")
+            sector = st.selectbox("Sector",
+                ["FinTech", "SaaS", "HealthTech", "EdTech", "CleanTech",
+                 "E-Commerce", "DeepTech", "Cybersecurity", "MarketPlace", "Other"],
+                key="inp_sector",
+            )
+            stage = st.selectbox("Stage",
+                ["Pre-Seed", "Seed", "Series A", "Series B", "Series C+", "Growth"],
+                key="inp_stage",
             )
 
+    with card2:
+        with st.container(border=True):
+            overline("Financials")
+            revenue = st.number_input("Annual revenue (£)", min_value=0,
+                                      key="inp_revenue", step=100_000, format="%d")
+            growth_pct = st.number_input("Revenue growth (%)", min_value=-100,
+                                         key="inp_growth", step=5)
+            ebitda_margin = st.number_input("EBITDA margin (%)", min_value=-100,
+                                            key="inp_ebitda", step=1)
 
-# ═══════════════════════════════════════════════════════════════════
-# TAB 4 — MEMO
-# ═══════════════════════════════════════════════════════════════════
-with tab_memo:
-    st.markdown("<h2 style='font-size:20px;margin:16px 0 16px;'>Investment memo</h2>", unsafe_allow_html=True)
+    with card3:
+        with st.container(border=True):
+            overline("Capital position")
+            geography = st.selectbox("Geography",
+                ["UK", "Europe", "US", "Asia", "Global", "MENA", "LatAm"],
+                key="inp_geo",
+            )
+            cash = st.number_input("Cash on hand (£)", min_value=0,
+                                   key="inp_cash", step=100_000, format="%d")
+            burn = st.number_input("Monthly burn (£)", min_value=0,
+                                   key="inp_burn", step=10_000, format="%d")
 
-    if not openai_key:
+    # ── Advanced expander ──
+    with st.expander("Advanced — debt and capital structure"):
+        _a1, _a2, _a3 = st.columns(3)
+        with _a1:
+            total_debt = st.number_input("Total debt (£)", min_value=0,
+                                         key="inp_debt", step=50_000, format="%d")
+        with _a2:
+            cost_of_debt = st.number_input("Cost of debt (%)", min_value=1,
+                                           max_value=20, key="inp_cod", step=1)
+        with _a3:
+            st.markdown(
+                "<p style='font-size:12px;color:#94A3B8;margin-top:28px;'>"
+                "Leave debt at £0 if the company has no meaningful debt.</p>",
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
+
+    # ── Run analysis button (centered) ──
+    _r1, _r2, _r3 = st.columns([3, 2, 3])
+    with _r2:
+        if st.button("Run analysis", key="run_analysis_btn", use_container_width=True):
+            with st.spinner("Running valuation models..."):
+                import time; time.sleep(0.6)
+            st.session_state.page = "results"
+            st.session_state.active_tab = "Valuation"
+            st.rerun()
+
+    st.markdown(
+        "<p style='font-size:12px;color:#94A3B8;text-align:center;"
+        "margin-top:8px;'>Results open in a new view</p>",
+        unsafe_allow_html=True,
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# RESULTS PAGE
+# ══════════════════════════════════════════════════════════════════════════════
+def render_results() -> None:
+    company = st.session_state.inp_company
+    render_topnav(company=company)
+
+    # ── Back link ──
+    st.markdown('<div class="back-link" style="display:none;"></div>',
+                unsafe_allow_html=True)
+    if st.button("← Back to home", key="back_home_btn"):
+        st.session_state.page = "home"
+        st.rerun()
+
+    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
+    # ── Compute valuations from session state ──
+    _revenue       = st.session_state.inp_revenue
+    _growth_pct    = st.session_state.inp_growth
+    _ebitda_margin = st.session_state.inp_ebitda
+    _stage         = st.session_state.inp_stage
+    _sector        = st.session_state.inp_sector
+    _geography     = st.session_state.inp_geo
+    _cash          = st.session_state.inp_cash
+    _burn          = st.session_state.inp_burn
+    _total_debt    = st.session_state.inp_debt
+    _cod           = st.session_state.inp_cod
+    _openai_key    = st.session_state.inp_openai
+
+    _inputs = CompanyInputs(
+        stage=_stage,
+        total_debt_gbp=float(_total_debt) if _total_debt > 0 else None,
+        cost_of_debt_pct=float(_cod),
+    )
+    _dcf   = dcf_valuation(_revenue, _growth_pct, _ebitda_margin, _inputs)
+    _comps = comparable_valuation(_revenue, _sector)
+    _blend = blended_valuation(_dcf, _comps)
+    _runway = int(_cash / _burn) if _burn > 0 else 999
+
+    # ── Layout: sidebar (1) + main (4) ──
+    nav_col, main_col = st.columns([1, 4], gap="large")
+
+    # ── LEFT SIDEBAR NAV ──
+    with nav_col:
         st.markdown(
-            f"<div style='background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;"
-            f"padding:48px 32px;text-align:center;margin:24px 0;'>"
-            f"<div style='font-size:40px;'>🔑</div>"
-            f"<h3 style='font-size:18px;font-weight:500;color:#1D4ED8;margin:16px 0 8px;'>OpenAI API key required</h3>"
-            f"<p style='font-size:14px;color:#64748B;margin:0;'>Add your OpenAI API key to enable AI-generated investment memos.</p>"
-            f"<p style='font-size:13px;color:#94A3B8;margin:8px 0 0;'>Open the <b>Settings</b> expander above and enter your key.</p>"
-            f"</div>",
+            "<div style='background:#FFFFFF;border:1px solid #E2E8F0;"
+            "border-radius:8px;padding:12px 8px;'>"
+            "<p style='font-size:10px;letter-spacing:0.1em;text-transform:uppercase;"
+            "color:#94A3B8;margin:0 0 10px;padding:0 8px;'>Analysis</p>"
+            "</div>",
             unsafe_allow_html=True,
         )
-    else:
-        try:
-            import openai
-            from prompts.prompts import MEMO_SYSTEM, MEMO_USER
-            if st.button("Generate investment memo"):
-                with st.spinner("Generating with GPT-4o…"):
-                    client = openai.OpenAI(api_key=openai_key)
-                    prompt = MEMO_USER.format(
-                        company_name=company_name, sector=sector, stage=stage,
-                        geography=geography, revenue=revenue, growth=growth_pct,
-                        ebitda_margin=ebitda_margin, cash=cash, burn=burn,
-                        valuation=blend["base"]/1e6,
-                    )
-                    resp = client.chat.completions.create(
-                        model="gpt-4o",
-                        messages=[{"role": "system", "content": MEMO_SYSTEM},
-                                  {"role": "user",   "content": prompt}],
-                        max_tokens=1200,
-                    )
-                    st.markdown(resp.choices[0].message.content)
-        except ImportError:
-            st.error("openai package not installed. Run: pip install openai")
-        except Exception as e:
-            st.error(f"Error: {e}")
 
+        NAV_ITEMS = [
+            "Valuation",
+            "Fundraising",
+            "VC matching",
+            "Investment memo",
+            "M&A analysis",
+        ]
+        for item in NAV_ITEMS:
+            is_active = st.session_state.active_tab == item
+            if _nav_btn(item, is_active, key=f"nav_{item.replace(' ', '_')}"):
+                st.session_state.active_tab = item
+                st.rerun()
 
-# ═══════════════════════════════════════════════════════════════════
-# TAB 5 — M&A
-# ═══════════════════════════════════════════════════════════════════
-with tab_ma:
-    st.markdown("<h2 style='font-size:20px;margin:16px 0 16px;'>M&A analysis</h2>", unsafe_allow_html=True)
-
-    if not openai_key:
         st.markdown(
-            f"<div style='background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;"
-            f"padding:48px 32px;text-align:center;margin:24px 0;'>"
-            f"<div style='font-size:40px;'>🔑</div>"
-            f"<h3 style='font-size:18px;font-weight:500;color:#1D4ED8;margin:16px 0 8px;'>OpenAI API key required</h3>"
-            f"<p style='font-size:14px;color:#64748B;margin:0;'>Add your OpenAI API key to enable AI-powered M&A analysis.</p>"
-            f"<p style='font-size:13px;color:#94A3B8;margin:8px 0 0;'>Open the <b>Settings</b> expander above and enter your key.</p>"
-            f"</div>",
+            "<div style='border-top:1px solid #E2E8F0;margin:12px 8px;'></div>",
             unsafe_allow_html=True,
         )
-    else:
-        try:
-            import openai
-            from prompts.prompts import MA_SYSTEM, MA_USER
-            if st.button("Generate M&A analysis"):
-                with st.spinner("Generating with GPT-4o…"):
-                    client = openai.OpenAI(api_key=openai_key)
-                    prompt = MA_USER.format(
-                        company_name=company_name, sector=sector, stage=stage,
-                        revenue=revenue, growth=growth_pct,
-                        ebitda_margin=ebitda_margin, valuation=blend["base"]/1e6,
+        st.markdown(
+            "<p style='font-size:10px;letter-spacing:0.1em;text-transform:uppercase;"
+            "color:#94A3B8;margin:0 0 6px;padding:0 8px;'>Settings</p>",
+            unsafe_allow_html=True,
+        )
+        with st.expander("API key"):
+            st.text_input(
+                "OpenAI API key",
+                key="inp_openai",
+                type="password",
+                placeholder="sk-...",
+                label_visibility="collapsed",
+            )
+
+    # ── MAIN CONTENT ──
+    with main_col:
+        tab = st.session_state.active_tab
+
+        # ──────────────────────────────────────────────────────────────────
+        # VALUATION
+        # ──────────────────────────────────────────────────────────────────
+        if tab == "Valuation":
+            section_header(
+                "Valuation",
+                f"Enterprise value range · {company} · {_sector} · {_stage}"
+            )
+
+            # WACC callout
+            wacc_kind = "info" if "equity-only" in _blend["wacc_method"].lower() else "success"
+            callout(
+                f"WACC: <b>{_blend['wacc']*100:.1f}%</b> — {_blend['wacc_method']}",
+                kind=wacc_kind,
+            )
+
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
+            # Headline cards
+            _optimistic_color = GREEN if _blend["high"] > 0 else RED
+            st.markdown(
+                "<div style='display:grid;grid-template-columns:1fr 1fr 1fr;"
+                "gap:12px;margin-bottom:20px;'>"
+                + card_html("Conservative", fmt_gbp(_blend["low"]),
+                            "25th percentile", "1px solid #E2E8F0", "#64748B")
+                + card_html("Base case", fmt_gbp(_blend["base"]),
+                            "Most likely", f"2px solid {BLUE}", BLUE)
+                + card_html("Optimistic", fmt_gbp(_blend["high"]),
+                            "75th percentile", "1px solid #E2E8F0", GREEN)
+                + "</div>",
+                unsafe_allow_html=True,
+            )
+
+            # DCF vs Comps side by side
+            _dl, _dr = st.columns(2)
+            with _dl:
+                overline("DCF valuation — three scenarios")
+                dcf_df = pd.DataFrame({
+                    "Scenario": ["Conservative", "Base", "Optimistic"],
+                    "Value (£m)": [
+                        round(_dcf["low"]/1e6, 1),
+                        round(_dcf["base"]/1e6, 1),
+                        round(_dcf["high"]/1e6, 1),
+                    ],
+                })
+                st.dataframe(dcf_df, hide_index=True, use_container_width=True)
+
+                fig_dcf = go.Figure(go.Bar(
+                    x=["Conservative", "Base", "Optimistic"],
+                    y=[_dcf["low"]/1e6, _dcf["base"]/1e6, _dcf["high"]/1e6],
+                    marker_color=[BLUE_MID, BLUE, GREEN],
+                    text=[fmt_gbp(v) for v in [_dcf["low"], _dcf["base"], _dcf["high"]]],
+                    textposition="outside",
+                ))
+                _dcf_layout = dict(**PLOTLY_BASE)
+                _dcf_layout["margin"] = dict(l=0, r=0, t=30, b=0)
+                fig_dcf.update_layout(
+                    title="DCF (£m)",
+                    xaxis=dict(**AXIS_CLEAN),
+                    yaxis=dict(**AXIS_CLEAN),
+                    **_dcf_layout,
+                )
+                st.plotly_chart(fig_dcf, use_container_width=True)
+
+            with _dr:
+                overline("Comparable multiples — three scenarios")
+                _sector_mult = {
+                    "FinTech": {"low":4.0,"base":7.0,"high":12.0},
+                    "SaaS": {"low":5.0,"base":9.0,"high":15.0},
+                    "HealthTech": {"low":3.5,"base":6.0,"high":10.0},
+                    "EdTech": {"low":2.5,"base":4.5,"high":8.0},
+                    "CleanTech": {"low":3.0,"base":5.5,"high":9.0},
+                    "E-Commerce": {"low":1.5,"base":3.0,"high":5.5},
+                    "DeepTech": {"low":4.0,"base":8.0,"high":14.0},
+                    "Cybersecurity": {"low":5.0,"base":9.5,"high":16.0},
+                    "MarketPlace": {"low":2.0,"base":4.0,"high":7.0},
+                    "Other": {"low":2.0,"base":4.0,"high":7.0},
+                }
+                _m = _sector_mult.get(_sector, _sector_mult["Other"])
+                comps_df = pd.DataFrame({
+                    "Scenario": ["Conservative", "Base", "Optimistic"],
+                    "EV/Rev":   [_m["low"], _m["base"], _m["high"]],
+                    "Value (£m)": [
+                        round(_comps["low"]/1e6, 1),
+                        round(_comps["base"]/1e6, 1),
+                        round(_comps["high"]/1e6, 1),
+                    ],
+                })
+                st.dataframe(comps_df, hide_index=True, use_container_width=True)
+
+                fig_comps = go.Figure(go.Bar(
+                    x=["Conservative", "Base", "Optimistic"],
+                    y=[_comps["low"]/1e6, _comps["base"]/1e6, _comps["high"]/1e6],
+                    marker_color=[BLUE_MID, BLUE, GREEN],
+                    text=[fmt_gbp(v) for v in [_comps["low"], _comps["base"], _comps["high"]]],
+                    textposition="outside",
+                ))
+                fig_comps.update_layout(
+                    title="Comparables (£m)",
+                    xaxis=dict(**AXIS_CLEAN),
+                    yaxis=dict(**AXIS_CLEAN),
+                    **_dcf_layout,
+                )
+                st.plotly_chart(fig_comps, use_container_width=True)
+
+            st.markdown("<hr/>", unsafe_allow_html=True)
+            overline("5-year revenue projection")
+
+            _proj = five_year_projection(_revenue, _growth_pct, _ebitda_margin)
+
+            # Styled HTML table
+            _trows = ""
+            for i, row in _proj.iterrows():
+                _bg = "#F8FAFC" if i % 2 == 0 else "#FFFFFF"
+                _ebitda_color = RED if row["EBITDA (£m)"] < 0 else "#0F172A"
+                _trows += (
+                    f"<tr style='background:{_bg};'>"
+                    f"<td style='padding:10px 14px;font-size:13px;color:#0F172A;"
+                    f"border-bottom:1px solid #F1F5F9;'>{row['Year']}</td>"
+                    f"<td style='padding:10px 14px;font-size:13px;color:#0F172A;"
+                    f"border-bottom:1px solid #F1F5F9;'>£{row['Revenue (£m)']}m</td>"
+                    f"<td style='padding:10px 14px;font-size:13px;color:{_ebitda_color};"
+                    f"border-bottom:1px solid #F1F5F9;'>£{row['EBITDA (£m)']}m</td>"
+                    f"<td style='padding:10px 14px;font-size:13px;color:#0F172A;"
+                    f"border-bottom:1px solid #F1F5F9;'>{row['EBITDA Margin']}</td>"
+                    f"</tr>"
+                )
+            st.markdown(
+                "<div style='background:#FFFFFF;border:1px solid #E2E8F0;"
+                "border-radius:8px;overflow:hidden;'>"
+                "<table style='width:100%;border-collapse:collapse;'>"
+                "<thead><tr style='background:#F8FAFC;'>"
+                "<th style='padding:10px 14px;font-size:11px;letter-spacing:0.06em;"
+                "text-transform:uppercase;color:#94A3B8;text-align:left;font-weight:400;"
+                "border-bottom:1px solid #E2E8F0;'>Year</th>"
+                "<th style='padding:10px 14px;font-size:11px;letter-spacing:0.06em;"
+                "text-transform:uppercase;color:#94A3B8;text-align:left;font-weight:400;"
+                "border-bottom:1px solid #E2E8F0;'>Revenue</th>"
+                "<th style='padding:10px 14px;font-size:11px;letter-spacing:0.06em;"
+                "text-transform:uppercase;color:#94A3B8;text-align:left;font-weight:400;"
+                "border-bottom:1px solid #E2E8F0;'>EBITDA</th>"
+                "<th style='padding:10px 14px;font-size:11px;letter-spacing:0.06em;"
+                "text-transform:uppercase;color:#94A3B8;text-align:left;font-weight:400;"
+                "border-bottom:1px solid #E2E8F0;'>Margin</th>"
+                "</tr></thead>"
+                f"<tbody>{_trows}</tbody>"
+                "</table></div>",
+                unsafe_allow_html=True,
+            )
+
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
+            fig_proj = go.Figure()
+            fig_proj.add_trace(go.Scatter(
+                x=_proj["Year"], y=_proj["Revenue (£m)"],
+                mode="lines+markers+text", name="Revenue",
+                line=dict(color=BLUE, width=2),
+                text=[f"£{v}m" for v in _proj["Revenue (£m)"]],
+                textposition="top center", textfont=dict(size=11, color="#0F172A"),
+            ))
+            fig_proj.add_trace(go.Scatter(
+                x=_proj["Year"], y=_proj["EBITDA (£m)"],
+                mode="lines+markers+text", name="EBITDA",
+                line=dict(color=GREEN, width=2, dash="dot"),
+                text=[f"£{v}m" for v in _proj["EBITDA (£m)"]],
+                textposition="bottom center", textfont=dict(size=11, color="#0F172A"),
+            ))
+            fig_proj.update_layout(
+                title="5-year revenue & EBITDA (£m)",
+                xaxis=dict(**AXIS_CLEAN),
+                yaxis=dict(**AXIS_CLEAN),
+                legend=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0",
+                            orientation="h", y=-0.15),
+                **PLOTLY_BASE,
+            )
+            st.plotly_chart(fig_proj, use_container_width=True)
+
+        # ──────────────────────────────────────────────────────────────────
+        # FUNDRAISING
+        # ──────────────────────────────────────────────────────────────────
+        elif tab == "Fundraising":
+            section_header(
+                "Fundraising",
+                f"Runway, raise sizing, and readiness · {company}"
+            )
+
+            gauge_color = RED if _runway < 12 else GREEN if _runway >= 18 else AMBER
+            fig_gauge = go.Figure(go.Indicator(
+                mode="gauge+number",
+                value=_runway,
+                domain={"x": [0, 1], "y": [0, 1]},
+                title={"text": "Runway (months)", "font": {"color": "#64748B", "size": 13}},
+                gauge={
+                    "axis": {"range": [0, 36], "tickcolor": "#94A3B8",
+                             "tickfont": {"color": "#94A3B8"}},
+                    "bar": {"color": gauge_color},
+                    "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
+                    "steps": [
+                        {"range": [0, 12],  "color": "#FEE2E2"},
+                        {"range": [12, 18], "color": "#FEF3C7"},
+                        {"range": [18, 36], "color": "#D1FAE5"},
+                    ],
+                    "threshold": {"line": {"color": BLUE, "width": 3}, "value": 18},
+                },
+                number={"font": {"color": gauge_color, "size": 48}},
+            ))
+            fig_gauge.update_layout(
+                paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+                font=dict(color="#0F172A"), height=260,
+                margin=dict(l=20, r=20, t=40, b=20),
+            )
+            st.plotly_chart(fig_gauge, use_container_width=True)
+
+            st.markdown("<hr/>", unsafe_allow_html=True)
+
+            _recommended = _burn * 18
+            _dilution     = 0.20 if _stage == "Seed" else 0.15 if _stage == "Series A" else 0.12
+            _post_money   = _blend["base"] + _recommended
+
+            _fm1, _fm2, _fm3 = st.columns(3)
+            _fm1.metric("Recommended raise", fmt_gbp(_recommended),
+                        help="18 months runway at current burn")
+            _fm2.metric("Estimated dilution", f"{_dilution*100:.0f}%")
+            _fm3.metric("Post-money (base)",  fmt_gbp(_post_money))
+
+            st.markdown("<hr/>", unsafe_allow_html=True)
+            overline("Suggested use of funds")
+
+            _cats    = ["Engineering & Product", "Sales & Marketing",
+                        "Operations", "G&A / Legal", "Reserve"]
+            _weights = [0.40, 0.30, 0.15, 0.10, 0.05]
+            _amounts = [_recommended * w for w in _weights]
+
+            fig_pie = go.Figure(go.Pie(
+                labels=_cats, values=_amounts, hole=0.45,
+                marker=dict(colors=[BLUE, BLUE_MID, GREEN, AMBER, "#CBD5E1"]),
+                textinfo="label+percent",
+                textfont=dict(color="#0F172A", size=12),
+            ))
+            fig_pie.update_layout(
+                title=f"Use of {fmt_gbp(_recommended)} raise",
+                showlegend=False, **PLOTLY_BASE,
+            )
+            st.plotly_chart(fig_pie, use_container_width=True)
+
+            uof_df = pd.DataFrame({
+                "Category":   _cats,
+                "Allocation": [f"{w*100:.0f}%" for w in _weights],
+                "Amount (£)": [f"£{a:,.0f}" for a in _amounts],
+            })
+            st.dataframe(uof_df, hide_index=True, use_container_width=True)
+
+            st.markdown("<hr/>", unsafe_allow_html=True)
+            overline("Cash runway bridge")
+
+            _mo = list(range(0, min(_runway + 1, 37)))
+            _cv = [max(_cash - _burn * m, 0) for m in _mo]
+            fig_burn = go.Figure()
+            fig_burn.add_trace(go.Scatter(
+                x=_mo, y=[c/1e6 for c in _cv],
+                fill="tozeroy", mode="lines",
+                line=dict(color=BLUE, width=2),
+                fillcolor="rgba(29,78,216,0.07)",
+                name="Cash (£m)",
+            ))
+            if 12 <= _runway:
+                fig_burn.add_vline(x=12, line_dash="dot", line_color=RED,
+                                   annotation_text="12-month warning",
+                                   annotation_font_color=RED)
+            if _runway < 36:
+                fig_burn.add_vline(x=_runway, line_dash="dash", line_color=AMBER,
+                                   annotation_text=f"Zero cash (M{_runway})",
+                                   annotation_font_color=AMBER)
+            fig_burn.update_layout(
+                title="Cash balance over time (£m)",
+                xaxis=dict(title="Month", **AXIS_CLEAN),
+                yaxis=dict(title="£m", **AXIS_CLEAN),
+                legend=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0"),
+                margin=dict(l=0, r=0, t=30, b=0),
+                **{k: v for k, v in PLOTLY_BASE.items() if k not in ("margin",)},
+            )
+            st.plotly_chart(fig_burn, use_container_width=True)
+
+            st.markdown("<hr/>", unsafe_allow_html=True)
+            overline("Fundraising readiness checklist")
+            _tips = [
+                ("Runway",            _runway >= 18, f"{_runway} months remaining" if _runway >= 18 else f"Only {_runway} months — raise urgently"),
+                ("Revenue traction",  _revenue > 0,  fmt_gbp(_revenue) + " ARR"),
+                ("Growth rate",       _growth_pct >= 50, f"{_growth_pct}% YoY growth"),
+                ("EBITDA visibility", _ebitda_margin >= 0, f"{_ebitda_margin}% margin"),
+            ]
+            for _lbl, _ok, _note in _tips:
+                _kind = "success" if _ok else "warning"
+                _icon = "+" if _ok else "!"
+                callout(f"[{_icon}] <b>{_lbl}</b> — {_note}", kind=_kind)
+
+        # ──────────────────────────────────────────────────────────────────
+        # VC MATCHING
+        # ──────────────────────────────────────────────────────────────────
+        elif tab == "VC matching":
+            section_header(
+                "VC matching",
+                f"Investor fit scores · {company} · {_sector} · {_stage} · {_geography}"
+            )
+
+            csv_path = os.path.join(os.path.dirname(__file__), "data", "vc_database.csv")
+            try:
+                vc_df = pd.read_csv(csv_path)
+            except FileNotFoundError:
+                st.error(f"VC database not found at {csv_path}")
+                st.stop()
+
+            _scored = score_investors(vc_df, _sector, _stage, _geography, _revenue)
+            _top10  = _scored.head(10).copy()
+
+            callout(
+                f"<b>{len(_scored)} investors</b> analysed — showing top 10 matches. "
+                f"Scores: Sector /40 · Stage /30 · Geography /20 · Cheque /10",
+                kind="info",
+            )
+
+            st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+            overline("Match scores")
+
+            # Stacked horizontal bar chart
+            _inv_names   = _top10["Investor"].tolist()[::-1]
+            _sector_sc   = _top10["Sector Fit"].tolist()[::-1]
+            _stage_sc    = _top10["Stage Fit"].tolist()[::-1]
+            _geo_sc      = _top10["Geo Fit"].tolist()[::-1]
+            _cheque_sc   = _top10["Cheque Fit"].tolist()[::-1]
+            _totals      = _top10["Score /100"].tolist()[::-1]
+
+            def _bar(name, vals, color, text_vals=None):
+                return go.Bar(
+                    name=name,
+                    y=_inv_names,
+                    x=vals,
+                    orientation="h",
+                    marker_color=color,
+                    text=[str(v) if v > 0 else "" for v in (text_vals or vals)],
+                    textposition="inside",
+                    insidetextanchor="middle",
+                    textfont=dict(size=10, color="white"),
+                )
+
+            fig_vc = go.Figure([
+                _bar("Sector /40",     _sector_sc,  BLUE_MID),
+                _bar("Stage /30",      _stage_sc,   GREEN),
+                _bar("Geography /20",  _geo_sc,     AMBER),
+                _bar("Cheque /10",     _cheque_sc,  PURPLE),
+            ])
+            fig_vc.update_layout(
+                barmode="stack",
+                height=360,
+                xaxis=dict(range=[0, 108], showgrid=False, zeroline=False,
+                           title="Score /100", color="#64748B",
+                           linecolor="#E2E8F0", tickcolor="#94A3B8"),
+                yaxis=dict(showgrid=False, zeroline=False, color="#0F172A",
+                           linecolor="#E2E8F0", tickcolor="#94A3B8"),
+                legend=dict(orientation="h", yanchor="top", y=-0.14,
+                            xanchor="center", x=0.5,
+                            bgcolor="#FFFFFF", bordercolor="#E2E8F0",
+                            font=dict(size=12, color="#64748B")),
+                paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+                font=dict(family="Inter, system-ui, sans-serif", color="#0F172A"),
+                margin=dict(l=0, r=70, t=10, b=60),
+            )
+            # Total score annotations
+            for name, total in zip(_inv_names, _totals):
+                fig_vc.add_annotation(
+                    x=total + 1, y=name,
+                    text=f"<b>{total}</b>",
+                    showarrow=False,
+                    font=dict(size=12, color="#0F172A"),
+                    xanchor="left",
+                )
+            st.plotly_chart(fig_vc, use_container_width=True)
+
+            st.markdown("<hr/>", unsafe_allow_html=True)
+            overline("Investor detail")
+            _display = ["Investor", "Type", "Score /100", "Sector Fit",
+                        "Stage Fit", "Geo Fit", "Cheque Fit",
+                        "Min Cheque (£m)", "Max Cheque (£m)"]
+            st.dataframe(_top10[_display].reset_index(drop=True),
+                         hide_index=True, use_container_width=True)
+
+            st.markdown("<hr/>", unsafe_allow_html=True)
+            overline("Quick links")
+            for _, _row in _top10.iterrows():
+                _url = _row.get("Website", "")
+                if _url:
+                    st.markdown(
+                        f"[{_row['Investor']}]({_url}) — "
+                        f"**{_row['Score /100']}/100**"
                     )
-                    resp = client.chat.completions.create(
-                        model="gpt-4o",
-                        messages=[{"role": "system", "content": MA_SYSTEM},
-                                  {"role": "user",   "content": prompt}],
-                        max_tokens=1200,
-                    )
-                    st.markdown(resp.choices[0].message.content)
-        except ImportError:
-            st.error("openai package not installed. Run: pip install openai")
-        except Exception as e:
-            st.error(f"Error: {e}")
+
+        # ──────────────────────────────────────────────────────────────────
+        # INVESTMENT MEMO
+        # ──────────────────────────────────────────────────────────────────
+        elif tab == "Investment memo":
+            section_header("Investment memo", f"AI-generated memo · {company}")
+
+            if not _openai_key:
+                st.markdown(
+                    f"<div style='background:#FFFFFF;border:1px solid #E2E8F0;"
+                    f"border-radius:8px;padding:48px 32px;text-align:center;"
+                    f"margin:24px 0;'>"
+                    f"<p style='font-size:32px;margin:0 0 16px;'>[ key ]</p>"
+                    f"<p style='font-size:18px;font-weight:500;color:{BLUE};"
+                    f"margin:0 0 8px;'>OpenAI API key required</p>"
+                    f"<p style='font-size:14px;color:#64748B;margin:0;'>"
+                    f"Add your API key in the Settings section of the left sidebar.</p>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                try:
+                    import openai
+                    from prompts.prompts import MEMO_SYSTEM, MEMO_USER
+                    if st.button("Generate memo", key="gen_memo_btn"):
+                        with st.spinner("Generating with GPT-4o..."):
+                            _client = openai.OpenAI(api_key=_openai_key)
+                            _prompt = MEMO_USER.format(
+                                company_name=company, sector=_sector, stage=_stage,
+                                geography=_geography, revenue=_revenue,
+                                growth=_growth_pct, ebitda_margin=_ebitda_margin,
+                                cash=_cash, burn=_burn,
+                                valuation=_blend["base"]/1e6,
+                            )
+                            _resp = _client.chat.completions.create(
+                                model="gpt-4o",
+                                messages=[{"role": "system", "content": MEMO_SYSTEM},
+                                          {"role": "user",   "content": _prompt}],
+                                max_tokens=1200,
+                            )
+                            st.markdown(_resp.choices[0].message.content)
+                except ImportError:
+                    st.error("openai package not installed. Run: pip install openai")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+        # ──────────────────────────────────────────────────────────────────
+        # M&A ANALYSIS
+        # ──────────────────────────────────────────────────────────────────
+        elif tab == "M&A analysis":
+            section_header("M&A analysis", f"Strategic options · {company}")
+
+            if not _openai_key:
+                st.markdown(
+                    f"<div style='background:#FFFFFF;border:1px solid #E2E8F0;"
+                    f"border-radius:8px;padding:48px 32px;text-align:center;"
+                    f"margin:24px 0;'>"
+                    f"<p style='font-size:32px;margin:0 0 16px;'>[ key ]</p>"
+                    f"<p style='font-size:18px;font-weight:500;color:{BLUE};"
+                    f"margin:0 0 8px;'>OpenAI API key required</p>"
+                    f"<p style='font-size:14px;color:#64748B;margin:0;'>"
+                    f"Add your API key in the Settings section of the left sidebar.</p>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                try:
+                    import openai
+                    from prompts.prompts import MA_SYSTEM, MA_USER
+                    if st.button("Generate M&A analysis", key="gen_ma_btn"):
+                        with st.spinner("Generating with GPT-4o..."):
+                            _client = openai.OpenAI(api_key=_openai_key)
+                            _prompt = MA_USER.format(
+                                company_name=company, sector=_sector, stage=_stage,
+                                revenue=_revenue, growth=_growth_pct,
+                                ebitda_margin=_ebitda_margin,
+                                valuation=_blend["base"]/1e6,
+                            )
+                            _resp = _client.chat.completions.create(
+                                model="gpt-4o",
+                                messages=[{"role": "system", "content": MA_SYSTEM},
+                                          {"role": "user",   "content": _prompt}],
+                                max_tokens=1200,
+                            )
+                            st.markdown(_resp.choices[0].message.content)
+                except ImportError:
+                    st.error("openai package not installed. Run: pip install openai")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+
+
+# ── Page router ───────────────────────────────────────────────────────────────
+if st.session_state.page == "home":
+    render_home()
+else:
+    render_results()
