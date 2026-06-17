@@ -77,11 +77,11 @@ PLOTLY_LAYOUT = dict(
     paper_bgcolor="#10101a",
     plot_bgcolor="#10101a",
     font=dict(color="#e0e0e0", family="Inter, Segoe UI, sans-serif"),
-    xaxis=dict(gridcolor="#1e1e2e", linecolor="#2a2a3a"),
-    yaxis=dict(gridcolor="#1e1e2e", linecolor="#2a2a3a"),
     legend=dict(bgcolor="#16162a", bordercolor="#2a2a3a"),
     margin=dict(l=20, r=20, t=40, b=20),
 )
+
+AXIS_STYLE = dict(gridcolor="#1e1e2e", linecolor="#2a2a3a")
 
 PURPLE = "#7c6af7"
 PURPLE_LIGHT = "#a89cf7"
@@ -209,7 +209,7 @@ with tab_val:
             text=[f"£{v/1e6:.1f}m" for v in [dcf["low"], dcf["base"], dcf["high"]]],
             textposition="outside",
         ))
-        fig_dcf.update_layout(title="DCF Scenarios (£m)", **PLOTLY_LAYOUT)
+        fig_dcf.update_layout(title="DCF Scenarios (£m)", xaxis=AXIS_STYLE, yaxis=AXIS_STYLE, **PLOTLY_LAYOUT)
         st.plotly_chart(fig_dcf, use_container_width=True)
 
     with col_r:
@@ -245,7 +245,7 @@ with tab_val:
             text=[f"£{v/1e6:.1f}m" for v in [comps["low"], comps["base"], comps["high"]]],
             textposition="outside",
         ))
-        fig_comps.update_layout(title="Comparable Multiples (£m)", **PLOTLY_LAYOUT)
+        fig_comps.update_layout(title="Comparable Multiples (£m)", xaxis=AXIS_STYLE, yaxis=AXIS_STYLE, **PLOTLY_LAYOUT)
         st.plotly_chart(fig_comps, use_container_width=True)
 
     st.markdown("---")
@@ -260,7 +260,7 @@ with tab_val:
     fig_blend.add_trace(go.Bar(name="DCF",        x=scenarios, y=dcf_vals,   marker_color=PURPLE_DARK))
     fig_blend.add_trace(go.Bar(name="Comparables", x=scenarios, y=comps_vals, marker_color=PURPLE))
     fig_blend.add_trace(go.Bar(name="Blended",    x=scenarios, y=blend_vals, marker_color=PURPLE_LIGHT))
-    fig_blend.update_layout(barmode="group", title="Blended Valuation (£m)", **PLOTLY_LAYOUT)
+    fig_blend.update_layout(barmode="group", title="Blended Valuation (£m)", xaxis=AXIS_STYLE, yaxis=AXIS_STYLE, **PLOTLY_LAYOUT)
     st.plotly_chart(fig_blend, use_container_width=True)
 
     st.markdown("---")
@@ -286,7 +286,7 @@ with tab_val:
         text=[f"£{v}m" for v in proj_df["EBITDA (£m)"]],
         textposition="bottom center",
     ))
-    fig_proj.update_layout(title="5-Year Revenue & EBITDA (£m)", **PLOTLY_LAYOUT)
+    fig_proj.update_layout(title="5-Year Revenue & EBITDA (£m)", xaxis=AXIS_STYLE, yaxis=AXIS_STYLE, **PLOTLY_LAYOUT)
     st.plotly_chart(fig_proj, use_container_width=True)
 
 
@@ -355,8 +355,8 @@ with tab_fund:
     ))
     fig_pie.update_layout(
         title=f"Use of £{recommended_raise/1e6:.1f}m Raise",
-        **PLOTLY_LAYOUT,
         showlegend=False,
+        **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig_pie, use_container_width=True)
 
@@ -391,8 +391,8 @@ with tab_fund:
                            annotation_font_color="#e0b050")
     fig_burn.update_layout(
         title="Cash Balance Over Time (£m)",
-        xaxis_title="Month",
-        yaxis_title="£m",
+        xaxis=dict(title="Month", **AXIS_STYLE),
+        yaxis=dict(title="£m", **AXIS_STYLE),
         **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig_burn, use_container_width=True)
@@ -451,8 +451,8 @@ with tab_vc:
     ))
     fig_vc.update_layout(
         title="Top 10 Investor Match Scores",
-        xaxis_title="Score /100",
-        yaxis={"autorange": "reversed"},
+        xaxis=dict(title="Score /100", **AXIS_STYLE),
+        yaxis=dict(autorange="reversed", **AXIS_STYLE),
         **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig_vc, use_container_width=True)
@@ -490,6 +490,8 @@ with tab_vc:
             angularaxis=dict(color="#9090b0"),
         ),
         title="Score Breakdown — Top 5 Investors",
+        xaxis=AXIS_STYLE,
+        yaxis=AXIS_STYLE,
         **PLOTLY_LAYOUT,
     )
     st.plotly_chart(fig_radar, use_container_width=True)
