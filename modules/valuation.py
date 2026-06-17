@@ -1,5 +1,9 @@
 """Valuation calculations: DCF, comparable multiples, blended, and projections."""
 
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 
@@ -28,7 +32,7 @@ STAGE_GROWTH_PREMIUM = {
     "Growth":    0.03,
 }
 
-# Stage-based WACC
+# Stage-based WACC (cost of equity, 100% equity assumed)
 STAGE_WACC = {
     "Pre-Seed":  0.40,
     "Seed":      0.35,
@@ -37,6 +41,48 @@ STAGE_WACC = {
     "Series C+": 0.20,
     "Growth":    0.18,
 }
+
+TAX_RATE = 0.25  # UK corporation tax rate used for debt tax shield
+
+
+@dataclass
+class CompanyInputs:
+    """Holds all user-supplied company parameters for valuation."""
+    stage: str
+    total_debt_gbp: Optional[float] = None
+    cost_of_debt_pct: Optional[float] = 8.0
+
+
+def calculate_wacc(inputs: CompanyInputs,
+                   enterprise_value_gbp: Optional[float] = None) -> tuple[float, str]:
+    """
+    Return (wacc_value, wacc_method_description).
+
+    If total_debt_gbp is provided, positive, and an enterprise_value_gbp is
+    available, compute a true blended WACC (equity + debt).  Otherwise fall
+    back to the stage-based equity-only required return.
+    """
+    cost_of_equity = STAGE_WACC.get(inputs.stage, 0.30)
+    debt = inputs.total_debt_gbp or 0.0
+
+    if debt > 0 and enterprise_value_gbp and enterprise_value_gbp > 0:
+        equity_value  = max(enterprise_value_gbp - debt, 0.0)
+        total_capital = equity_value + debt
+
+        weight_equity = equity_value / total_capital
+        weight_debt   = debt / total_capital
+
+        cost_of_debt_after_tax = (inputs.cost_of_debt_pct or 8.0) / 100 * (1 - TAX_RATE)
+
+        wacc_value = (weight_equity * cost_of_equity) + (weight_debt * cost_of_debt_after_tax)
+        description = "Blended WACC (equity + debt)"
+        return wacc_value, description
+
+    description = (
+        "Equity-only required return "
+        "(100% equity assumed — standard for venture-stage companies)"
+    )
+    return cost_of_equity, description
 
 
 def _dcf_value(revenue: float, growth_rate: float, ebitda_margin: float,
@@ -59,14 +105,28 @@ def _dcf_value(revenue: float, growth_rate: float, ebitda_margin: float,
 
 
 def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
-                  stage: str) -> dict:
-    """Return low/base/high DCF values in GBP."""
-    wacc = STAGE_WACC.get(stage, 0.30)
-    tg = STAGE_GROWTH_PREMIUM.get(stage, 0.025)
+                  inputs: CompanyInputs) -> dict:
+    """
+    Return low/base/high DCF values in GBP, plus wacc and wacc_method.
+
+    Uses calculate_wacc: if the company has debt and a proxy EV is
+    computable, a blended WACC is applied; otherwise stage-based.
+    """
+    stage_wacc = STAGE_WACC.get(inputs.stage, 0.30)
+    tg = STAGE_GROWTH_PREMIUM.get(inputs.stage, 0.025)
+
+    # Compute a proxy base EV with the stage WACC to use as EV input for
+    # the blended WACC calculation (avoids a circular dependency).
+    proxy_ev = _dcf_value(revenue, growth_pct, ebitda_margin, stage_wacc, tg)
+
+    wacc, wacc_method = calculate_wacc(inputs, enterprise_value_gbp=proxy_ev)
+
     return {
-        "low":  _dcf_value(revenue, growth_pct, ebitda_margin, wacc + 0.05, tg - 0.005, scenario_adj=-0.05),
-        "base": _dcf_value(revenue, growth_pct, ebitda_margin, wacc,        tg),
-        "high": _dcf_value(revenue, growth_pct, ebitda_margin, wacc - 0.05, tg + 0.005, scenario_adj=0.05),
+        "low":         _dcf_value(revenue, growth_pct, ebitda_margin, wacc + 0.05, tg - 0.005, scenario_adj=-0.05),
+        "base":        _dcf_value(revenue, growth_pct, ebitda_margin, wacc,         tg),
+        "high":        _dcf_value(revenue, growth_pct, ebitda_margin, wacc - 0.05, tg + 0.005, scenario_adj=0.05),
+        "wacc":        wacc,
+        "wacc_method": wacc_method,
     }
 
 
@@ -81,12 +141,14 @@ def comparable_valuation(revenue: float, sector: str) -> dict:
 
 
 def blended_valuation(dcf: dict, comps: dict, dcf_weight: float = 0.5) -> dict:
-    """Blend DCF and comps with given weight."""
+    """Blend DCF and comps with given weight. Passes through wacc metadata."""
     w2 = 1 - dcf_weight
     return {
-        "low":  dcf["low"]  * dcf_weight + comps["low"]  * w2,
-        "base": dcf["base"] * dcf_weight + comps["base"] * w2,
-        "high": dcf["high"] * dcf_weight + comps["high"] * w2,
+        "low":         dcf["low"]  * dcf_weight + comps["low"]  * w2,
+        "base":        dcf["base"] * dcf_weight + comps["base"] * w2,
+        "high":        dcf["high"] * dcf_weight + comps["high"] * w2,
+        "wacc":        dcf.get("wacc", 0.30),
+        "wacc_method": dcf.get("wacc_method", ""),
     }
 
 

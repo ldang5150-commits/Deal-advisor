@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import os
 
 from modules.valuation import (
+    CompanyInputs,
     dcf_valuation,
     comparable_valuation,
     blended_valuation,
@@ -147,11 +148,28 @@ with st.sidebar:
     )
 
     st.markdown("---")
+    st.markdown("### Capital Structure (optional)")
+    total_debt = st.number_input(
+        "Total debt (£)", min_value=0, value=0, step=50_000, format="%d",
+    )
+    cost_of_debt = st.slider("Cost of debt (%)", min_value=1, max_value=20, value=8)
+    st.markdown(
+        "<p style='color:#9090b0;font-size:0.8rem;'>Leave debt at £0 if the company "
+        "has no meaningful debt — equity-only assumption will apply.</p>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("---")
     openai_key = st.text_input("OpenAI API Key (optional)", type="password",
                                placeholder="sk-...")
 
 # ── Pre-compute valuations ────────────────────────────────────────────────────
-dcf   = dcf_valuation(revenue, growth_pct, ebitda_margin, stage)
+company_inputs = CompanyInputs(
+    stage=stage,
+    total_debt_gbp=float(total_debt) if total_debt > 0 else None,
+    cost_of_debt_pct=float(cost_of_debt),
+)
+dcf   = dcf_valuation(revenue, growth_pct, ebitda_margin, company_inputs)
 comps = comparable_valuation(revenue, sector)
 blend = blended_valuation(dcf, comps)
 
@@ -192,6 +210,12 @@ with tab_val:
 
     with col_l:
         st.markdown("### DCF Valuation")
+        st.markdown(
+            f"<p style='color:#9090b0;font-size:0.85rem;'>"
+            f"⚙️ <b>WACC: {blend['wacc']*100:.1f}%</b> — {blend['wacc_method']}"
+            f"</p>",
+            unsafe_allow_html=True,
+        )
         dcf_df = pd.DataFrame({
             "Scenario": ["🔴 Low", "🟡 Base", "🟢 High"],
             "Value (£m)": [
