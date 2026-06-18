@@ -12,7 +12,8 @@ from modules.valuation import (
     blended_valuation,
     five_year_projection,
 )
-from modules.vc_matching import score_investors, MatchResult
+from modules.vc_matching import score_investors
+from types import SimpleNamespace as MatchResult
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -868,7 +869,7 @@ def render_results() -> None:
             _top5   = _scored.head(5).copy()
 
             # Build MatchResult objects for attribute-access in card display
-            match_list: list[MatchResult] = []
+            match_list = []
             for _, _r in _top5.iterrows():
                 match_list.append(MatchResult(
                     name              = _r["Investor"],
