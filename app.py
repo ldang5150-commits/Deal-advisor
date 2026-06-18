@@ -993,11 +993,13 @@ def render_results() -> None:
             for _rank, match in enumerate(match_list, start=1):
                 badge_color, badge_text = _badge_colors[_rank]
 
-                logo_url = (
-                    f"https://logo.clearbit.com/"
-                    f"{match.website.replace('https://','').replace('http://','').split('/')[0]}"
+                _domain = (
+                    match.website.replace("https://", "").replace(
+                        "http://", "").split("/")[0]
                     if match.website else ""
                 )
+                logo_url = f"https://logo.clearbit.com/{_domain}" if _domain else ""
+                _initials = "".join(w[0].upper() for w in match.name.split()[:2])
 
                 sector_color = (
                     "#10B981" if match.sector_score >= 30 else
@@ -1016,64 +1018,128 @@ def render_results() -> None:
                     "#EAB308" if match.cheque_score >= 5 else "#EF4444"
                 )
 
+                # Issue 2: plain ASCII label only — no unicode arrows or em-dashes
                 with st.expander(
-                    f"#{_rank}  {match.name}  —  {match.score}/100",
-                    expanded=(_rank == 1),
+                    f"No.{_rank}  {match.name}  |  {match.score}/100",
+                    expanded=(_rank == 1),  # Issue 3: only rank 1 open by default
                 ):
-                    st.markdown(f"""
-<div style="padding: 4px 0;">
+                    # ── Header row ──
+                    _hc1, _hc2, _hc3 = st.columns([0.5, 4, 1])
+                    with _hc1:
+                        try:
+                            st.image(logo_url, width=40)
+                        except Exception:
+                            st.markdown(
+                                f"<div style='width:40px;height:40px;background:#FEF3C7;"
+                                f"border-radius:6px;display:flex;align-items:center;"
+                                f"justify-content:center;font-size:13px;font-weight:500;"
+                                f"color:#92400E;'>{_initials}</div>",
+                                unsafe_allow_html=True,
+                            )
+                    with _hc2:
+                        st.markdown(
+                            f"<p style='font-size:15px;font-weight:500;color:#1F2937;"
+                            f"margin:0;'>{match.name}</p>"
+                            f"<p style='font-size:12px;color:#6B7280;font-style:italic;"
+                            f"margin:2px 0 0;'>{match.description}</p>",
+                            unsafe_allow_html=True,
+                        )
+                    with _hc3:
+                        st.markdown(
+                            f"<div style='background:{badge_color};color:{badge_text};"
+                            f"padding:6px 12px;border-radius:6px;font-size:15px;"
+                            f"font-weight:500;text-align:center;'>{match.score}</div>",
+                            unsafe_allow_html=True,
+                        )
 
-  <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
-    <img src="{logo_url}" width="40" height="40" style="border-radius: 6px; border: 1px solid #E5E7EB; object-fit: contain; padding: 4px; background: white;" onerror="this.style.display='none'"/>
-    <div style="flex: 1;">
-      <p style="font-size: 15px; font-weight: 500; color: #1F2937; margin: 0;">{match.name}</p>
-      <p style="font-size: 12px; color: #6B7280; margin: 2px 0 0; font-style: italic;">{match.description}</p>
-    </div>
-    <div style="background: {badge_color}; color: {badge_text}; padding: 6px 16px; border-radius: 6px; font-size: 15px; font-weight: 500;">{match.score}</div>
-  </div>
+                    st.markdown("<div style='height:8px;'></div>",
+                                unsafe_allow_html=True)
 
-  <div style="margin-bottom: 10px;">
-    <a href="{match.website}" target="_blank" style="font-size: 12px; color: #1F2937; padding: 6px 14px; border: 1px solid #D1D5DB; border-radius: 6px; text-decoration: none; display: inline-block;">Visit website →</a>
-    <span style="font-size: 12px; color: #6B7280; margin-left: 12px;">Portfolio: {match.notable_portfolio}</span>
-  </div>
+                    # ── Website + portfolio ──
+                    st.markdown(
+                        f'<a href="{match.website}" target="_blank" style="font-size:12px;'
+                        f'color:#1F2937;padding:6px 14px;border:1px solid #D1D5DB;'
+                        f'border-radius:6px;text-decoration:none;display:inline-block;">'
+                        f'Visit website</a>',
+                        unsafe_allow_html=True,
+                    )
+                    st.caption(f"Portfolio: {match.notable_portfolio}")
 
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;">
+                    st.markdown("<div style='height:4px;'></div>",
+                                unsafe_allow_html=True)
 
-    <div style="background: #FAF8F1; border-radius: 6px; padding: 12px 14px; border-left: 3px solid #1F2937;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7280;">Sector fit</span>
-        <span style="font-size: 13px; font-weight: 500; color: {sector_color};">{match.sector_score}/35</span>
-      </div>
-      <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.5;">{match.sector_rationale}</p>
-    </div>
-
-    <div style="background: #FAF8F1; border-radius: 6px; padding: 12px 14px; border-left: 3px solid #EAB308;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7280;">Stage fit</span>
-        <span style="font-size: 13px; font-weight: 500; color: {stage_color};">{match.stage_score}/35</span>
-      </div>
-      <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.5;">{match.stage_rationale}</p>
-    </div>
-
-    <div style="background: #FAF8F1; border-radius: 6px; padding: 12px 14px; border-left: 3px solid #F97316;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7280;">Geography fit</span>
-        <span style="font-size: 13px; font-weight: 500; color: {geo_color};">{match.geo_score}/20</span>
-      </div>
-      <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.5;">{match.geo_rationale}</p>
-    </div>
-
-    <div style="background: #FAF8F1; border-radius: 6px; padding: 12px 14px; border-left: 3px solid #65A30D;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7280;">Cheque size</span>
-        <span style="font-size: 13px; font-weight: 500; color: {cheque_color};">{match.cheque_score}/10</span>
-      </div>
-      <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.5;">{match.cheque_rationale}</p>
-    </div>
-
-  </div>
-</div>
-""", unsafe_allow_html=True)
+                    # ── 2x2 score grid — Issue 1: one st.markdown per box ──
+                    _gc1, _gc2 = st.columns(2)
+                    with _gc1:
+                        # Sector
+                        st.markdown(
+                            f"<div style='background:#FAF8F1;border-radius:6px;"
+                            f"padding:12px 14px;border-left:3px solid #1F2937;"
+                            f"margin-bottom:8px;'>"
+                            f"<div style='display:flex;justify-content:space-between;"
+                            f"align-items:center;margin-bottom:6px;'>"
+                            f"<span style='font-size:11px;letter-spacing:0.08em;"
+                            f"text-transform:uppercase;color:#6B7280;'>Sector fit</span>"
+                            f"<span style='font-size:13px;font-weight:500;"
+                            f"color:{sector_color};'>{match.sector_score}/35</span>"
+                            f"</div>"
+                            f"<p style='font-size:12px;color:#4B5563;margin:0;"
+                            f"line-height:1.5;'>{match.sector_rationale}</p>"
+                            f"</div>",
+                            unsafe_allow_html=True,
+                        )
+                        # Geography
+                        st.markdown(
+                            f"<div style='background:#FAF8F1;border-radius:6px;"
+                            f"padding:12px 14px;border-left:3px solid #F97316;"
+                            f"margin-bottom:8px;'>"
+                            f"<div style='display:flex;justify-content:space-between;"
+                            f"align-items:center;margin-bottom:6px;'>"
+                            f"<span style='font-size:11px;letter-spacing:0.08em;"
+                            f"text-transform:uppercase;color:#6B7280;'>Geography fit</span>"
+                            f"<span style='font-size:13px;font-weight:500;"
+                            f"color:{geo_color};'>{match.geo_score}/20</span>"
+                            f"</div>"
+                            f"<p style='font-size:12px;color:#4B5563;margin:0;"
+                            f"line-height:1.5;'>{match.geo_rationale}</p>"
+                            f"</div>",
+                            unsafe_allow_html=True,
+                        )
+                    with _gc2:
+                        # Stage
+                        st.markdown(
+                            f"<div style='background:#FAF8F1;border-radius:6px;"
+                            f"padding:12px 14px;border-left:3px solid #EAB308;"
+                            f"margin-bottom:8px;'>"
+                            f"<div style='display:flex;justify-content:space-between;"
+                            f"align-items:center;margin-bottom:6px;'>"
+                            f"<span style='font-size:11px;letter-spacing:0.08em;"
+                            f"text-transform:uppercase;color:#6B7280;'>Stage fit</span>"
+                            f"<span style='font-size:13px;font-weight:500;"
+                            f"color:{stage_color};'>{match.stage_score}/35</span>"
+                            f"</div>"
+                            f"<p style='font-size:12px;color:#4B5563;margin:0;"
+                            f"line-height:1.5;'>{match.stage_rationale}</p>"
+                            f"</div>",
+                            unsafe_allow_html=True,
+                        )
+                        # Cheque
+                        st.markdown(
+                            f"<div style='background:#FAF8F1;border-radius:6px;"
+                            f"padding:12px 14px;border-left:3px solid #65A30D;"
+                            f"margin-bottom:8px;'>"
+                            f"<div style='display:flex;justify-content:space-between;"
+                            f"align-items:center;margin-bottom:6px;'>"
+                            f"<span style='font-size:11px;letter-spacing:0.08em;"
+                            f"text-transform:uppercase;color:#6B7280;'>Cheque size</span>"
+                            f"<span style='font-size:13px;font-weight:500;"
+                            f"color:{cheque_color};'>{match.cheque_score}/10</span>"
+                            f"</div>"
+                            f"<p style='font-size:12px;color:#4B5563;margin:0;"
+                            f"line-height:1.5;'>{match.cheque_rationale}</p>"
+                            f"</div>",
+                            unsafe_allow_html=True,
+                        )
 
         # ──────────────────────────────────────────────────────────────────
         # INVESTMENT MEMO
