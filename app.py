@@ -853,11 +853,6 @@ def render_results() -> None:
         # VC MATCHING
         # ──────────────────────────────────────────────────────────────────
         elif tab == "VC matching":
-            section_header(
-                "VC matching",
-                f"Top 5 investors ranked for {company} · {_stage} · {_geography} {_sector}"
-            )
-
             csv_path = os.path.join(os.path.dirname(__file__), "data", "vc_database.csv")
             try:
                 vc_df = pd.read_csv(csv_path)
@@ -868,7 +863,6 @@ def render_results() -> None:
             _scored = score_investors(vc_df, _sector, _stage, _geography, _revenue)
             _top5   = _scored.head(5).copy()
 
-            # Build MatchResult objects for attribute-access in card display
             match_list = []
             for _, _r in _top5.iterrows():
                 match_list.append(MatchResult(
@@ -889,140 +883,50 @@ def render_results() -> None:
                     investor_type     = str(_r["Type"]),
                 ))
 
-            callout(
-                f"<b>{len(_scored)} investors</b> analysed — showing top 5 matches. "
-                f"New scoring: Sector /35 · Stage /35 · Geography /20 · Cheque /10. "
-                f"Specialists score higher than generalists.",
-                kind="info",
-            )
+            st.markdown("### VC Matching")
+            st.caption("Top 5 investors ranked by specialist fit score")
 
-            st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
-            overline("Score breakdown")
+            names         = [m.name         for m in match_list]
+            sector_scores = [m.sector_score for m in match_list]
+            stage_scores  = [m.stage_score  for m in match_list]
+            geo_scores    = [m.geo_score    for m in match_list]
+            cheque_scores = [m.cheque_score for m in match_list]
+            totals        = [m.score        for m in match_list]
 
-            # ── Stacked horizontal bar chart — top 5, reversed so rank 1 is at top ──
-            _vc_names   = [m.name          for m in reversed(match_list)]
-            _vc_sector  = [m.sector_score  for m in reversed(match_list)]
-            _vc_stage   = [m.stage_score   for m in reversed(match_list)]
-            _vc_geo     = [m.geo_score     for m in reversed(match_list)]
-            _vc_cheque  = [m.cheque_score  for m in reversed(match_list)]
-            _vc_totals  = [m.score         for m in reversed(match_list)]
+            fig = go.Figure()
+            fig.add_trace(go.Bar(name="Sector /35",    y=names, x=sector_scores, orientation="h", marker_color="#1F2937", text=sector_scores, textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
+            fig.add_trace(go.Bar(name="Stage /35",     y=names, x=stage_scores,  orientation="h", marker_color="#EAB308", text=stage_scores,  textposition="inside", insidetextanchor="middle", textfont=dict(color="#1F2937", size=11)))
+            fig.add_trace(go.Bar(name="Geography /20", y=names, x=geo_scores,    orientation="h", marker_color="#F97316", text=geo_scores,    textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
+            fig.add_trace(go.Bar(name="Cheque /10",    y=names, x=cheque_scores, orientation="h", marker_color="#65A30D", text=cheque_scores, textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
 
-            _vc_fig = go.Figure([
-                go.Bar(
-                    name="Sector /35", y=_vc_names, x=_vc_sector,
-                    orientation="h", marker_color="#1F2937",
-                    text=[str(v) if v > 0 else "" for v in _vc_sector],
-                    textposition="inside", insidetextanchor="middle",
-                    textfont=dict(size=11, color="white"),
-                ),
-                go.Bar(
-                    name="Stage /35", y=_vc_names, x=_vc_stage,
-                    orientation="h", marker_color="#EAB308",
-                    text=[str(v) if v > 0 else "" for v in _vc_stage],
-                    textposition="inside", insidetextanchor="middle",
-                    textfont=dict(size=11, color="#1F2937"),
-                ),
-                go.Bar(
-                    name="Geography /20", y=_vc_names, x=_vc_geo,
-                    orientation="h", marker_color="#F97316",
-                    text=[str(v) if v > 0 else "" for v in _vc_geo],
-                    textposition="inside", insidetextanchor="middle",
-                    textfont=dict(size=11, color="white"),
-                ),
-                go.Bar(
-                    name="Cheque /10", y=_vc_names, x=_vc_cheque,
-                    orientation="h", marker_color="#65A30D",
-                    text=[str(v) if v > 0 else "" for v in _vc_cheque],
-                    textposition="inside", insidetextanchor="middle",
-                    textfont=dict(size=11, color="white"),
-                ),
-            ])
-            _vc_fig.update_layout(
+            for name, total in zip(names, totals):
+                fig.add_annotation(x=total + 1, y=name, text="<b>" + str(total) + "</b>", showarrow=False, xanchor="left", font=dict(size=13, color="#1F2937"))
+
+            fig.update_layout(
                 barmode="stack",
-                height=300,
                 paper_bgcolor="#FAF8F1",
                 plot_bgcolor="#FAF8F1",
-                font=dict(family="Inter, system-ui, sans-serif", color="#1F2937"),
-                xaxis=dict(
-                    range=[0, 110], showgrid=False, zeroline=False,
-                    title="Score /100", color="#6B7280",
-                    linecolor="#E2E8F0", tickcolor="#6B7280", tickfont=dict(size=11),
-                ),
-                yaxis=dict(
-                    showgrid=False, zeroline=False, color="#1F2937",
-                    linecolor="#E2E8F0", tickcolor="#1F2937", tickfont=dict(size=13),
-                ),
-                legend=dict(
-                    orientation="h",
-                    yanchor="top",
-                    y=-0.25,
-                    xanchor="center",
-                    x=0.5,
-                    font=dict(size=11, color="#6B7280"),
-                    bgcolor="rgba(0,0,0,0)",
-                    traceorder="normal",
-                ),
-                margin=dict(l=120, r=60, t=20, b=80),
-            )
-            for _nm, _tot in zip(_vc_names, _vc_totals):
-                _vc_fig.add_annotation(
-                    x=_tot + 2, y=_nm,
-                    text=f"<b>{_tot}</b>",
-                    showarrow=False,
-                    font=dict(size=13, color="#1F2937"),
-                    xanchor="left",
-                )
-            st.plotly_chart(
-                _vc_fig,
-                use_container_width=True,
-                config={"displayModeBar": False, "scrollZoom": False},
+                height=280,
+                margin=dict(l=130, r=60, t=10, b=80),
+                xaxis=dict(range=[0, 110], showgrid=False, title="Score /100"),
+                yaxis=dict(showgrid=False, autorange="reversed"),
+                legend=dict(orientation="h", yanchor="top", y=-0.25, xanchor="center", x=0.5, font=dict(size=11, color="#6B7280"), bgcolor="rgba(0,0,0,0)"),
+                showlegend=True,
             )
 
-            st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
-            overline("Investor detail")
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-            # ── Five expandable firm cards using MatchResult attribute access ──
-            _badge_colors = {
-                1: ("#1F2937", "white"),
-                2: ("#EAB308", "#1F2937"),
-                3: ("#EAB308", "#1F2937"),
-                4: ("#F97316", "white"),
-                5: ("#F97316", "white"),
-            }
+            st.divider()
 
-            for _rank, match in enumerate(match_list, start=1):
-                _domain = (
-                    match.website.replace("https://", "").replace(
-                        "http://", "").split("/")[0]
-                    if match.website else ""
-                )
-                logo_url = "https://logo.clearbit.com/" + _domain if _domain else ""
-                _initials = "".join(w[0].upper() for w in match.name.split()[:2])
-
-                with st.expander("No." + str(_rank) + "  " + str(match.name) + "  |  " + str(match.score) + "/100", expanded=(_rank == 1)):
-                    # ── Header row ──
-                    _hc1, _hc2, _hc3 = st.columns([0.5, 4, 1])
-                    with _hc1:
-                        try:
-                            st.image(logo_url, width=40)
-                        except Exception:
-                            st.write(_initials)
-                    with _hc2:
-                        st.markdown("**" + str(match.name) + "**")
-                        st.caption(str(match.description))
-                    with _hc3:
-                        st.metric(label="Score", value=str(match.score) + "/100")
-
-                    # ── Website + portfolio ──
-                    if match.website:
-                        st.link_button("Visit website", str(match.website))
+            for rank, match in enumerate(match_list, start=1):
+                label = "No." + str(rank) + "  " + str(match.name) + "  |  " + str(match.score) + "/100"
+                with st.expander(label, expanded=(rank == 1)):
+                    st.markdown("**" + str(match.name) + "**")
+                    st.caption(str(match.description))
+                    st.link_button("Visit website", str(match.website))
                     st.caption("Portfolio: " + str(match.notable_portfolio))
-
                     st.divider()
-
-                    # ── 2x2 score grid — native Streamlit only, no HTML ──
                     col_a, col_b = st.columns(2)
-
                     with col_a:
                         st.markdown("**SECTOR FIT — " + str(match.sector_score) + "/35**")
                         st.progress(int(match.sector_score) / 35)
@@ -1031,7 +935,6 @@ def render_results() -> None:
                         st.markdown("**GEOGRAPHY FIT — " + str(match.geo_score) + "/20**")
                         st.progress(int(match.geo_score) / 20)
                         st.caption(str(match.geo_rationale))
-
                     with col_b:
                         st.markdown("**STAGE FIT — " + str(match.stage_score) + "/35**")
                         st.progress(int(match.stage_score) / 35)
