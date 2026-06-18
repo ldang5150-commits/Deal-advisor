@@ -854,7 +854,7 @@ def render_results() -> None:
         elif tab == "VC matching":
             section_header(
                 "VC matching",
-                f"Investor fit scores · {company} · {_sector} · {_stage} · {_geography}"
+                f"Top 5 investors ranked for {company} · {_stage} · {_geography} {_sector}"
             )
 
             csv_path = os.path.join(os.path.dirname(__file__), "data", "vc_database.csv")
@@ -865,88 +865,245 @@ def render_results() -> None:
                 st.stop()
 
             _scored = score_investors(vc_df, _sector, _stage, _geography, _revenue)
-            _top10  = _scored.head(10).copy()
+            _top5   = _scored.head(5).copy()
 
             callout(
-                f"<b>{len(_scored)} investors</b> analysed — showing top 10 matches. "
-                f"Scores: Sector /40 · Stage /30 · Geography /20 · Cheque /10",
+                f"<b>{len(_scored)} investors</b> analysed — showing top 5 matches. "
+                f"New scoring: Sector /35 · Stage /35 · Geography /20 · Cheque /10. "
+                f"Specialists score higher than generalists.",
                 kind="info",
             )
 
             st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
-            overline("Match scores")
+            overline("Score breakdown")
 
-            # Stacked horizontal bar chart
-            _inv_names   = _top10["Investor"].tolist()[::-1]
-            _sector_sc   = _top10["Sector Fit"].tolist()[::-1]
-            _stage_sc    = _top10["Stage Fit"].tolist()[::-1]
-            _geo_sc      = _top10["Geo Fit"].tolist()[::-1]
-            _cheque_sc   = _top10["Cheque Fit"].tolist()[::-1]
-            _totals      = _top10["Score /100"].tolist()[::-1]
+            # ── Stacked horizontal bar chart — top 5 ──
+            _vc_names   = _top5["Investor"].tolist()[::-1]
+            _vc_sector  = _top5["Sector Fit"].tolist()[::-1]
+            _vc_stage   = _top5["Stage Fit"].tolist()[::-1]
+            _vc_geo     = _top5["Geo Fit"].tolist()[::-1]
+            _vc_cheque  = _top5["Cheque Fit"].tolist()[::-1]
+            _vc_totals  = _top5["Score /100"].tolist()[::-1]
 
-            def _bar(name, vals, color, text_vals=None):
-                return go.Bar(
-                    name=name,
-                    y=_inv_names,
-                    x=vals,
-                    orientation="h",
-                    marker_color=color,
-                    text=[str(v) if v > 0 else "" for v in (text_vals or vals)],
-                    textposition="inside",
-                    insidetextanchor="middle",
-                    textfont=dict(size=10, color="white"),
-                )
-
-            fig_vc = go.Figure([
-                _bar("Sector /40",     _sector_sc,  BLUE_MID),
-                _bar("Stage /30",      _stage_sc,   GREEN),
-                _bar("Geography /20",  _geo_sc,     AMBER),
-                _bar("Cheque /10",     _cheque_sc,  PURPLE),
+            # Sector and cheque bars use dark text (light colour), others white
+            _vc_fig = go.Figure([
+                go.Bar(
+                    name="Sector /35", y=_vc_names, x=_vc_sector,
+                    orientation="h", marker_color="#1F2937",
+                    text=[str(v) if v > 0 else "" for v in _vc_sector],
+                    textposition="inside", insidetextanchor="middle",
+                    textfont=dict(size=11, color="white"),
+                ),
+                go.Bar(
+                    name="Stage /35", y=_vc_names, x=_vc_stage,
+                    orientation="h", marker_color="#EAB308",
+                    text=[str(v) if v > 0 else "" for v in _vc_stage],
+                    textposition="inside", insidetextanchor="middle",
+                    textfont=dict(size=11, color="#1F2937"),
+                ),
+                go.Bar(
+                    name="Geography /20", y=_vc_names, x=_vc_geo,
+                    orientation="h", marker_color="#F97316",
+                    text=[str(v) if v > 0 else "" for v in _vc_geo],
+                    textposition="inside", insidetextanchor="middle",
+                    textfont=dict(size=11, color="white"),
+                ),
+                go.Bar(
+                    name="Cheque /10", y=_vc_names, x=_vc_cheque,
+                    orientation="h", marker_color="#65A30D",
+                    text=[str(v) if v > 0 else "" for v in _vc_cheque],
+                    textposition="inside", insidetextanchor="middle",
+                    textfont=dict(size=11, color="white"),
+                ),
             ])
-            fig_vc.update_layout(
+            _vc_fig.update_layout(
                 barmode="stack",
-                height=360,
-                xaxis=dict(range=[0, 108], showgrid=False, zeroline=False,
-                           title="Score /100", color="#64748B",
-                           linecolor="#E2E8F0", tickcolor="#94A3B8"),
-                yaxis=dict(showgrid=False, zeroline=False, color="#0F172A",
-                           linecolor="#E2E8F0", tickcolor="#94A3B8"),
-                legend=dict(orientation="h", yanchor="top", y=-0.14,
-                            xanchor="center", x=0.5,
-                            bgcolor="#FFFFFF", bordercolor="#E2E8F0",
-                            font=dict(size=12, color="#64748B")),
-                paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
-                font=dict(family="Inter, system-ui, sans-serif", color="#0F172A"),
-                margin=dict(l=0, r=70, t=10, b=60),
+                height=280,
+                paper_bgcolor="#FAF8F1",
+                plot_bgcolor="#FAF8F1",
+                font=dict(family="Inter, system-ui, sans-serif", color="#1F2937"),
+                xaxis=dict(
+                    range=[0, 110], showgrid=False, zeroline=False,
+                    title="Score /100", color="#6B7280",
+                    linecolor="#E2E8F0", tickcolor="#6B7280", tickfont=dict(size=11),
+                ),
+                yaxis=dict(
+                    showgrid=False, zeroline=False, color="#1F2937",
+                    linecolor="#E2E8F0", tickcolor="#1F2937", tickfont=dict(size=13),
+                ),
+                legend=dict(
+                    orientation="h", yanchor="top", y=-0.18,
+                    xanchor="center", x=0.5,
+                    bgcolor="#FAF8F1", bordercolor="#FEF3C7",
+                    font=dict(size=11, color="#6B7280"),
+                ),
+                margin=dict(l=0, r=72, t=8, b=64),
             )
-            # Total score annotations
-            for name, total in zip(_inv_names, _totals):
-                fig_vc.add_annotation(
-                    x=total + 1, y=name,
-                    text=f"<b>{total}</b>",
+            for _nm, _tot in zip(_vc_names, _vc_totals):
+                _vc_fig.add_annotation(
+                    x=_tot + 1, y=_nm,
+                    text=f"<b>{_tot}</b>",
                     showarrow=False,
-                    font=dict(size=12, color="#0F172A"),
+                    font=dict(size=13, color="#1F2937"),
                     xanchor="left",
                 )
-            st.plotly_chart(fig_vc, use_container_width=True)
+            st.plotly_chart(
+                _vc_fig,
+                use_container_width=True,
+                config={"displayModeBar": False, "scrollZoom": False},
+            )
 
-            st.markdown("<hr/>", unsafe_allow_html=True)
+            st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
             overline("Investor detail")
-            _display = ["Investor", "Type", "Score /100", "Sector Fit",
-                        "Stage Fit", "Geo Fit", "Cheque Fit",
-                        "Min Cheque (£m)", "Max Cheque (£m)"]
-            st.dataframe(_top10[_display].reset_index(drop=True),
-                         hide_index=True, use_container_width=True)
 
-            st.markdown("<hr/>", unsafe_allow_html=True)
-            overline("Quick links")
-            for _, _row in _top10.iterrows():
-                _url = _row.get("Website", "")
-                if _url:
-                    st.markdown(
-                        f"[{_row['Investor']}]({_url}) — "
-                        f"**{_row['Score /100']}/100**"
-                    )
+            # ── Five expandable firm cards ──
+            def _score_color(score: int, max_score: int) -> str:
+                pct = score / max_score if max_score > 0 else 0
+                if pct >= 1.0:
+                    return "#10B981"
+                elif pct >= 0.70:
+                    return "#EAB308"
+                else:
+                    return "#EF4444"
+
+            def _score_row(label: str, score: int, max_score: int,
+                           rationale: str) -> str:
+                color = _score_color(score, max_score)
+                return (
+                    f"<div style='margin-bottom:8px;'>"
+                    f"<div style='display:flex;align-items:center;"
+                    f"justify-content:space-between;margin-bottom:4px;'>"
+                    f"<span style='font-size:11px;letter-spacing:0.07em;"
+                    f"text-transform:uppercase;color:#6B7280;'>{label}</span>"
+                    f"<span style='font-size:13px;font-weight:500;"
+                    f"color:{color};'>{score}/{max_score}</span>"
+                    f"</div>"
+                    f"<p style='font-size:12px;color:#6B7280;margin:0;"
+                    f"line-height:1.5;'>{rationale}</p>"
+                    f"</div>"
+                )
+
+            for _rank, (_idx, _row) in enumerate(
+                    _top5.iterrows(), start=1):
+                _inv_name   = _row["Investor"]
+                _inv_score  = _row["Score /100"]
+                _website    = _row.get("Website", "")
+                _desc       = _row.get("Description", "")
+                _portfolio  = _row.get("Notable Portfolio", "")
+                _cheque_rng = _row.get("Cheque Range", "")
+
+                # Logo attempt via Clearbit
+                _domain = ""
+                if _website:
+                    try:
+                        _domain = _website.replace("https://", "").replace(
+                            "http://", "").split("/")[0]
+                    except Exception:
+                        _domain = ""
+
+                _initials = "".join(w[0].upper() for w in _inv_name.split()[:2])
+
+                # Score badge colour for expander label
+                _badge_bg = (
+                    "#1F2937" if _rank == 1 else
+                    "#EAB308" if _inv_score >= 70 else
+                    "#F97316"
+                )
+                _badge_fg = "#ffffff" if _badge_bg != "#EAB308" else "#1F2937"
+
+                with st.expander(
+                    f"{_rank}. {_inv_name} — {_inv_score}/100",
+                    expanded=(_rank == 1),
+                ):
+                    # Header row: logo | name + description | score badge
+                    _hc1, _hc2, _hc3 = st.columns([0.5, 4, 1])
+                    with _hc1:
+                        if _domain:
+                            try:
+                                st.image(
+                                    f"https://logo.clearbit.com/{_domain}",
+                                    width=32,
+                                )
+                            except Exception:
+                                st.markdown(
+                                    f"<div style='width:32px;height:32px;"
+                                    f"background:#FEF3C7;border-radius:6px;"
+                                    f"display:flex;align-items:center;"
+                                    f"justify-content:center;font-size:12px;"
+                                    f"font-weight:500;color:#92400E;'>"
+                                    f"{_initials}</div>",
+                                    unsafe_allow_html=True,
+                                )
+                        else:
+                            st.markdown(
+                                f"<div style='width:32px;height:32px;"
+                                f"background:#FEF3C7;border-radius:6px;"
+                                f"display:flex;align-items:center;"
+                                f"justify-content:center;font-size:12px;"
+                                f"font-weight:500;color:#92400E;'>"
+                                f"{_initials}</div>",
+                                unsafe_allow_html=True,
+                            )
+                    with _hc2:
+                        st.markdown(
+                            f"<p style='font-size:16px;font-weight:500;"
+                            f"color:#1F2937;margin:0 0 2px;'>{_inv_name}</p>"
+                            f"<p style='font-size:12px;color:#6B7280;"
+                            f"font-style:italic;margin:0;'>{_desc}</p>",
+                            unsafe_allow_html=True,
+                        )
+                    with _hc3:
+                        st.markdown(
+                            f"<div style='background:{_badge_bg};color:{_badge_fg};"
+                            f"padding:6px 12px;border-radius:6px;font-size:15px;"
+                            f"font-weight:500;text-align:center;'>"
+                            f"{_inv_score}</div>",
+                            unsafe_allow_html=True,
+                        )
+
+                    st.markdown("<div style='height:8px;'></div>",
+                                unsafe_allow_html=True)
+
+                    # Website + portfolio
+                    if _website:
+                        st.markdown(
+                            f"[{_website}]({_website})",
+                            unsafe_allow_html=True,
+                        )
+                    if _portfolio:
+                        st.markdown(
+                            f"<p style='font-size:12px;color:#6B7280;margin:4px 0 12px;'>"
+                            f"Notable portfolio: {_portfolio}</p>",
+                            unsafe_allow_html=True,
+                        )
+
+                    # Score rows: sector + stage on one row, geo + cheque on next
+                    _sr1, _sr2 = st.columns(2)
+                    with _sr1:
+                        st.markdown(
+                            _score_row("Sector", _row["Sector Fit"], 35,
+                                       _row["Sector Rationale"]),
+                            unsafe_allow_html=True,
+                        )
+                    with _sr2:
+                        st.markdown(
+                            _score_row("Stage", _row["Stage Fit"], 35,
+                                       _row["Stage Rationale"]),
+                            unsafe_allow_html=True,
+                        )
+                    _sr3, _sr4 = st.columns(2)
+                    with _sr3:
+                        st.markdown(
+                            _score_row("Geography", _row["Geo Fit"], 20,
+                                       _row["Geo Rationale"]),
+                            unsafe_allow_html=True,
+                        )
+                    with _sr4:
+                        st.markdown(
+                            _score_row("Cheque", _row["Cheque Fit"], 10,
+                                       _row["Cheque Rationale"]),
+                            unsafe_allow_html=True,
+                        )
 
         # ──────────────────────────────────────────────────────────────────
         # INVESTMENT MEMO
