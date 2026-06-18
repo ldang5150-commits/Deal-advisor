@@ -12,7 +12,7 @@ from modules.valuation import (
     blended_valuation,
     five_year_projection,
 )
-from modules.vc_matching import score_investors
+from modules.vc_matching import score_investors, MatchResult
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -867,6 +867,27 @@ def render_results() -> None:
             _scored = score_investors(vc_df, _sector, _stage, _geography, _revenue)
             _top5   = _scored.head(5).copy()
 
+            # Build MatchResult objects for attribute-access in card display
+            match_list: list[MatchResult] = []
+            for _, _r in _top5.iterrows():
+                match_list.append(MatchResult(
+                    name              = _r["Investor"],
+                    score             = int(_r["Score /100"]),
+                    sector_score      = int(_r["Sector Fit"]),
+                    stage_score       = int(_r["Stage Fit"]),
+                    geo_score         = int(_r["Geo Fit"]),
+                    cheque_score      = int(_r["Cheque Fit"]),
+                    sector_rationale  = str(_r["Sector Rationale"]),
+                    stage_rationale   = str(_r["Stage Rationale"]),
+                    geo_rationale     = str(_r["Geo Rationale"]),
+                    cheque_rationale  = str(_r["Cheque Rationale"]),
+                    notable_portfolio = str(_r["Notable Portfolio"]),
+                    cheque_range      = str(_r["Cheque Range"]),
+                    website           = str(_r["Website"]),
+                    description       = str(_r["Description"]),
+                    investor_type     = str(_r["Type"]),
+                ))
+
             callout(
                 f"<b>{len(_scored)} investors</b> analysed — showing top 5 matches. "
                 f"New scoring: Sector /35 · Stage /35 · Geography /20 · Cheque /10. "
@@ -877,15 +898,14 @@ def render_results() -> None:
             st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
             overline("Score breakdown")
 
-            # ── Stacked horizontal bar chart — top 5 ──
-            _vc_names   = _top5["Investor"].tolist()[::-1]
-            _vc_sector  = _top5["Sector Fit"].tolist()[::-1]
-            _vc_stage   = _top5["Stage Fit"].tolist()[::-1]
-            _vc_geo     = _top5["Geo Fit"].tolist()[::-1]
-            _vc_cheque  = _top5["Cheque Fit"].tolist()[::-1]
-            _vc_totals  = _top5["Score /100"].tolist()[::-1]
+            # ── Stacked horizontal bar chart — top 5, reversed so rank 1 is at top ──
+            _vc_names   = [m.name          for m in reversed(match_list)]
+            _vc_sector  = [m.sector_score  for m in reversed(match_list)]
+            _vc_stage   = [m.stage_score   for m in reversed(match_list)]
+            _vc_geo     = [m.geo_score     for m in reversed(match_list)]
+            _vc_cheque  = [m.cheque_score  for m in reversed(match_list)]
+            _vc_totals  = [m.score         for m in reversed(match_list)]
 
-            # Sector and cheque bars use dark text (light colour), others white
             _vc_fig = go.Figure([
                 go.Bar(
                     name="Sector /35", y=_vc_names, x=_vc_sector,
@@ -918,7 +938,7 @@ def render_results() -> None:
             ])
             _vc_fig.update_layout(
                 barmode="stack",
-                height=280,
+                height=300,
                 paper_bgcolor="#FAF8F1",
                 plot_bgcolor="#FAF8F1",
                 font=dict(family="Inter, system-ui, sans-serif", color="#1F2937"),
@@ -932,16 +952,20 @@ def render_results() -> None:
                     linecolor="#E2E8F0", tickcolor="#1F2937", tickfont=dict(size=13),
                 ),
                 legend=dict(
-                    orientation="h", yanchor="top", y=-0.18,
-                    xanchor="center", x=0.5,
-                    bgcolor="#FAF8F1", bordercolor="#FEF3C7",
+                    orientation="h",
+                    yanchor="top",
+                    y=-0.25,
+                    xanchor="center",
+                    x=0.5,
                     font=dict(size=11, color="#6B7280"),
+                    bgcolor="rgba(0,0,0,0)",
+                    traceorder="normal",
                 ),
-                margin=dict(l=0, r=72, t=8, b=64),
+                margin=dict(l=120, r=60, t=20, b=80),
             )
             for _nm, _tot in zip(_vc_names, _vc_totals):
                 _vc_fig.add_annotation(
-                    x=_tot + 1, y=_nm,
+                    x=_tot + 2, y=_nm,
                     text=f"<b>{_tot}</b>",
                     showarrow=False,
                     font=dict(size=13, color="#1F2937"),
@@ -956,154 +980,99 @@ def render_results() -> None:
             st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
             overline("Investor detail")
 
-            # ── Five expandable firm cards ──
-            def _score_color(score: int, max_score: int) -> str:
-                pct = score / max_score if max_score > 0 else 0
-                if pct >= 1.0:
-                    return "#10B981"
-                elif pct >= 0.70:
-                    return "#EAB308"
-                else:
-                    return "#EF4444"
+            # ── Five expandable firm cards using MatchResult attribute access ──
+            _badge_colors = {
+                1: ("#1F2937", "white"),
+                2: ("#EAB308", "#1F2937"),
+                3: ("#EAB308", "#1F2937"),
+                4: ("#F97316", "white"),
+                5: ("#F97316", "white"),
+            }
 
-            def _score_row(label: str, score: int, max_score: int,
-                           rationale: str) -> str:
-                color = _score_color(score, max_score)
-                return (
-                    f"<div style='margin-bottom:8px;'>"
-                    f"<div style='display:flex;align-items:center;"
-                    f"justify-content:space-between;margin-bottom:4px;'>"
-                    f"<span style='font-size:11px;letter-spacing:0.07em;"
-                    f"text-transform:uppercase;color:#6B7280;'>{label}</span>"
-                    f"<span style='font-size:13px;font-weight:500;"
-                    f"color:{color};'>{score}/{max_score}</span>"
-                    f"</div>"
-                    f"<p style='font-size:12px;color:#6B7280;margin:0;"
-                    f"line-height:1.5;'>{rationale}</p>"
-                    f"</div>"
+            for _rank, match in enumerate(match_list, start=1):
+                badge_color, badge_text = _badge_colors[_rank]
+
+                logo_url = (
+                    f"https://logo.clearbit.com/"
+                    f"{match.website.replace('https://','').replace('http://','').split('/')[0]}"
+                    if match.website else ""
                 )
 
-            for _rank, (_idx, _row) in enumerate(
-                    _top5.iterrows(), start=1):
-                _inv_name   = _row["Investor"]
-                _inv_score  = _row["Score /100"]
-                _website    = _row.get("Website", "")
-                _desc       = _row.get("Description", "")
-                _portfolio  = _row.get("Notable Portfolio", "")
-                _cheque_rng = _row.get("Cheque Range", "")
-
-                # Logo attempt via Clearbit
-                _domain = ""
-                if _website:
-                    try:
-                        _domain = _website.replace("https://", "").replace(
-                            "http://", "").split("/")[0]
-                    except Exception:
-                        _domain = ""
-
-                _initials = "".join(w[0].upper() for w in _inv_name.split()[:2])
-
-                # Score badge colour for expander label
-                _badge_bg = (
-                    "#1F2937" if _rank == 1 else
-                    "#EAB308" if _inv_score >= 70 else
-                    "#F97316"
+                sector_color = (
+                    "#10B981" if match.sector_score >= 30 else
+                    "#EAB308" if match.sector_score >= 18 else "#EF4444"
                 )
-                _badge_fg = "#ffffff" if _badge_bg != "#EAB308" else "#1F2937"
+                stage_color = (
+                    "#10B981" if match.stage_score >= 30 else
+                    "#EAB308" if match.stage_score >= 18 else "#EF4444"
+                )
+                geo_color = (
+                    "#10B981" if match.geo_score >= 16 else
+                    "#EAB308" if match.geo_score >= 10 else "#EF4444"
+                )
+                cheque_color = (
+                    "#10B981" if match.cheque_score >= 8 else
+                    "#EAB308" if match.cheque_score >= 5 else "#EF4444"
+                )
 
                 with st.expander(
-                    f"{_rank}. {_inv_name} — {_inv_score}/100",
+                    f"#{_rank}  {match.name}  —  {match.score}/100",
                     expanded=(_rank == 1),
                 ):
-                    # Header row: logo | name + description | score badge
-                    _hc1, _hc2, _hc3 = st.columns([0.5, 4, 1])
-                    with _hc1:
-                        if _domain:
-                            try:
-                                st.image(
-                                    f"https://logo.clearbit.com/{_domain}",
-                                    width=32,
-                                )
-                            except Exception:
-                                st.markdown(
-                                    f"<div style='width:32px;height:32px;"
-                                    f"background:#FEF3C7;border-radius:6px;"
-                                    f"display:flex;align-items:center;"
-                                    f"justify-content:center;font-size:12px;"
-                                    f"font-weight:500;color:#92400E;'>"
-                                    f"{_initials}</div>",
-                                    unsafe_allow_html=True,
-                                )
-                        else:
-                            st.markdown(
-                                f"<div style='width:32px;height:32px;"
-                                f"background:#FEF3C7;border-radius:6px;"
-                                f"display:flex;align-items:center;"
-                                f"justify-content:center;font-size:12px;"
-                                f"font-weight:500;color:#92400E;'>"
-                                f"{_initials}</div>",
-                                unsafe_allow_html=True,
-                            )
-                    with _hc2:
-                        st.markdown(
-                            f"<p style='font-size:16px;font-weight:500;"
-                            f"color:#1F2937;margin:0 0 2px;'>{_inv_name}</p>"
-                            f"<p style='font-size:12px;color:#6B7280;"
-                            f"font-style:italic;margin:0;'>{_desc}</p>",
-                            unsafe_allow_html=True,
-                        )
-                    with _hc3:
-                        st.markdown(
-                            f"<div style='background:{_badge_bg};color:{_badge_fg};"
-                            f"padding:6px 12px;border-radius:6px;font-size:15px;"
-                            f"font-weight:500;text-align:center;'>"
-                            f"{_inv_score}</div>",
-                            unsafe_allow_html=True,
-                        )
+                    st.markdown(f"""
+<div style="padding: 4px 0;">
 
-                    st.markdown("<div style='height:8px;'></div>",
-                                unsafe_allow_html=True)
+  <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+    <img src="{logo_url}" width="40" height="40" style="border-radius: 6px; border: 1px solid #E5E7EB; object-fit: contain; padding: 4px; background: white;" onerror="this.style.display='none'"/>
+    <div style="flex: 1;">
+      <p style="font-size: 15px; font-weight: 500; color: #1F2937; margin: 0;">{match.name}</p>
+      <p style="font-size: 12px; color: #6B7280; margin: 2px 0 0; font-style: italic;">{match.description}</p>
+    </div>
+    <div style="background: {badge_color}; color: {badge_text}; padding: 6px 16px; border-radius: 6px; font-size: 15px; font-weight: 500;">{match.score}</div>
+  </div>
 
-                    # Website + portfolio
-                    if _website:
-                        st.markdown(
-                            f"[{_website}]({_website})",
-                            unsafe_allow_html=True,
-                        )
-                    if _portfolio:
-                        st.markdown(
-                            f"<p style='font-size:12px;color:#6B7280;margin:4px 0 12px;'>"
-                            f"Notable portfolio: {_portfolio}</p>",
-                            unsafe_allow_html=True,
-                        )
+  <div style="margin-bottom: 10px;">
+    <a href="{match.website}" target="_blank" style="font-size: 12px; color: #1F2937; padding: 6px 14px; border: 1px solid #D1D5DB; border-radius: 6px; text-decoration: none; display: inline-block;">Visit website →</a>
+    <span style="font-size: 12px; color: #6B7280; margin-left: 12px;">Portfolio: {match.notable_portfolio}</span>
+  </div>
 
-                    # Score rows: sector + stage on one row, geo + cheque on next
-                    _sr1, _sr2 = st.columns(2)
-                    with _sr1:
-                        st.markdown(
-                            _score_row("Sector", _row["Sector Fit"], 35,
-                                       _row["Sector Rationale"]),
-                            unsafe_allow_html=True,
-                        )
-                    with _sr2:
-                        st.markdown(
-                            _score_row("Stage", _row["Stage Fit"], 35,
-                                       _row["Stage Rationale"]),
-                            unsafe_allow_html=True,
-                        )
-                    _sr3, _sr4 = st.columns(2)
-                    with _sr3:
-                        st.markdown(
-                            _score_row("Geography", _row["Geo Fit"], 20,
-                                       _row["Geo Rationale"]),
-                            unsafe_allow_html=True,
-                        )
-                    with _sr4:
-                        st.markdown(
-                            _score_row("Cheque", _row["Cheque Fit"], 10,
-                                       _row["Cheque Rationale"]),
-                            unsafe_allow_html=True,
-                        )
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px;">
+
+    <div style="background: #FAF8F1; border-radius: 6px; padding: 12px 14px; border-left: 3px solid #1F2937;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7280;">Sector fit</span>
+        <span style="font-size: 13px; font-weight: 500; color: {sector_color};">{match.sector_score}/35</span>
+      </div>
+      <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.5;">{match.sector_rationale}</p>
+    </div>
+
+    <div style="background: #FAF8F1; border-radius: 6px; padding: 12px 14px; border-left: 3px solid #EAB308;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7280;">Stage fit</span>
+        <span style="font-size: 13px; font-weight: 500; color: {stage_color};">{match.stage_score}/35</span>
+      </div>
+      <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.5;">{match.stage_rationale}</p>
+    </div>
+
+    <div style="background: #FAF8F1; border-radius: 6px; padding: 12px 14px; border-left: 3px solid #F97316;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7280;">Geography fit</span>
+        <span style="font-size: 13px; font-weight: 500; color: {geo_color};">{match.geo_score}/20</span>
+      </div>
+      <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.5;">{match.geo_rationale}</p>
+    </div>
+
+    <div style="background: #FAF8F1; border-radius: 6px; padding: 12px 14px; border-left: 3px solid #65A30D;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7280;">Cheque size</span>
+        <span style="font-size: 13px; font-weight: 500; color: {cheque_color};">{match.cheque_score}/10</span>
+      </div>
+      <p style="font-size: 12px; color: #4B5563; margin: 0; line-height: 1.5;">{match.cheque_rationale}</p>
+    </div>
+
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
         # ──────────────────────────────────────────────────────────────────
         # INVESTMENT MEMO
