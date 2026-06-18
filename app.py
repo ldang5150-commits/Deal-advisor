@@ -39,6 +39,20 @@ _DEFAULTS = {
     "inp_debt":     0,
     "inp_cod":      8,
     "inp_openai":   "",
+    # DCF assumption overrides
+    "inp_tax_rate":      25,
+    "inp_capex_pct":     5,
+    "inp_nwc_pct":       3,
+    "inp_target_margin": 25,
+    "inp_terminal_g":    3.0,
+    # WACC
+    "inp_use_custom_wacc": False,
+    "inp_custom_wacc":     28.0,
+    "inp_rfr":             4.2,
+    "inp_erp":             5.5,
+    "inp_beta":            None,
+    "inp_wacc_kd":         8.0,
+    "inp_wacc_debt":       0,
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
@@ -430,20 +444,58 @@ def render_home() -> None:
             burn = st.number_input("Monthly burn (£)", min_value=0,
                                    key="inp_burn", step=10_000, format="%d")
 
-    # ── Advanced expander ──
-    with st.expander("Advanced — debt and capital structure"):
-        _a1, _a2, _a3 = st.columns(3)
-        with _a1:
-            total_debt = st.number_input("Total debt (£)", min_value=0,
-                                         key="inp_debt", step=50_000, format="%d")
-        with _a2:
-            cost_of_debt = st.number_input("Cost of debt (%)", min_value=1,
-                                           max_value=20, key="inp_cod", step=1)
-        with _a3:
-            st.markdown(
-                "<p style='font-size:12px;color:#94A3B8;margin-top:28px;'>"
-                "Leave debt at £0 if the company has no meaningful debt.</p>",
-                unsafe_allow_html=True,
+    # ── Section 4: DCF assumptions ──
+    with st.expander("DCF assumptions — optional overrides"):
+        _d1, _d2 = st.columns(2)
+        with _d1:
+            st.number_input("Tax rate (%)", min_value=0, max_value=50,
+                            key="inp_tax_rate", step=1,
+                            help="UK corporation tax is 25%")
+            st.number_input("CapEx (% of EBITDA)", min_value=0, max_value=30,
+                            key="inp_capex_pct", step=1,
+                            help="Asset-light SaaS: 2-5%. Asset-heavy: 10-20%")
+            st.number_input("NWC change (% of EBITDA)", min_value=0, max_value=20,
+                            key="inp_nwc_pct", step=1,
+                            help="Working capital requirements as % of EBITDA")
+        with _d2:
+            st.number_input("Target EBITDA margin Year 5 (%)", min_value=-50, max_value=80,
+                            key="inp_target_margin", step=1,
+                            help="Expected mature margin at end of 5-year projection")
+            st.number_input("Terminal growth rate (%)", min_value=0.0, max_value=8.0,
+                            key="inp_terminal_g", step=0.5,
+                            help="Long-run growth rate beyond Year 5. Typically 2-4% for developed markets.")
+
+    # ── Section 5: WACC ──
+    with st.expander("WACC — calculate from formula or enter directly"):
+        _use_custom = st.toggle("Enter WACC directly instead of using formula",
+                                key="inp_use_custom_wacc")
+        if _use_custom:
+            st.number_input("WACC (%)", min_value=1.0, max_value=80.0,
+                            key="inp_custom_wacc", step=0.5,
+                            help="Enter your own WACC directly")
+            st.caption("Overrides all formula inputs below")
+        else:
+            _w1, _w2 = st.columns(2)
+            with _w1:
+                st.number_input("Risk-free rate (%)", min_value=0.0, max_value=20.0,
+                                key="inp_rfr", step=0.1,
+                                help="UK 10-year gilt yield. Currently ~4.2% (June 2026)")
+                st.number_input("Equity risk premium (%)", min_value=0.0, max_value=20.0,
+                                key="inp_erp", step=0.1,
+                                help="Damodaran UK ERP estimate. Typically 4.5-6.5%")
+                st.number_input("Beta", min_value=0.0, max_value=5.0,
+                                key="inp_beta", step=0.1,
+                                help="Unlevered beta. FinTech ~1.2-1.5, SaaS ~1.1-1.4, HealthTech ~0.8-1.2. Leave blank to use stage-based rate.")
+            with _w2:
+                st.number_input("Cost of debt (%)", min_value=0.0, max_value=30.0,
+                                key="inp_wacc_kd", step=0.5,
+                                help="Interest rate on company debt")
+                st.number_input("Total debt (£)", min_value=0,
+                                key="inp_wacc_debt", step=50_000, format="%d")
+            st.info(
+                "WACC = (E/V x Ke) + (D/V x Kd x (1-t))\n"
+                "Ke = Risk-free rate + Beta x Equity risk premium\n"
+                "If beta is left blank, stage-based required return is used instead."
             )
 
     st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
@@ -494,10 +546,21 @@ def render_results() -> None:
     _cod           = st.session_state.inp_cod
     _openai_key    = st.session_state.inp_openai
 
+    _beta_val = st.session_state.get("inp_beta", None)
     _inputs = CompanyInputs(
         stage=_stage,
-        total_debt_gbp=float(_total_debt) if _total_debt > 0 else None,
-        cost_of_debt_pct=float(_cod),
+        tax_rate_pct=float(st.session_state.get("inp_tax_rate", 25)),
+        capex_pct_of_ebitda=float(st.session_state.get("inp_capex_pct", 5)),
+        nwc_pct_of_ebitda=float(st.session_state.get("inp_nwc_pct", 3)),
+        target_ebitda_margin_pct=float(st.session_state.get("inp_target_margin", 25)),
+        terminal_growth_rate_pct=float(st.session_state.get("inp_terminal_g", 3.0)),
+        use_custom_wacc=bool(st.session_state.get("inp_use_custom_wacc", False)),
+        custom_wacc_pct=float(st.session_state.get("inp_custom_wacc", 28.0)),
+        risk_free_rate_pct=float(st.session_state.get("inp_rfr", 4.2)),
+        equity_risk_premium_pct=float(st.session_state.get("inp_erp", 5.5)),
+        beta=float(_beta_val) if _beta_val is not None else None,
+        cost_of_debt_pct=float(st.session_state.get("inp_wacc_kd", 8.0)),
+        debt_gbp=float(st.session_state.get("inp_wacc_debt", 0)),
     )
     _dcf   = dcf_valuation(_revenue, _growth_pct, _ebitda_margin, _inputs)
     _comps = comparable_valuation(_revenue, _sector)
@@ -563,11 +626,7 @@ def render_results() -> None:
             )
 
             # WACC callout
-            wacc_kind = "info" if "equity-only" in _blend["wacc_method"].lower() else "success"
-            callout(
-                f"WACC: <b>{_blend['wacc']*100:.1f}%</b> — {_blend['wacc_method']}",
-                kind=wacc_kind,
-            )
+            st.info("WACC: " + str(round(_blend["wacc"] * 100, 1)) + "% — " + str(_blend["wacc_method"]))
 
             st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 

@@ -22,18 +22,8 @@ SECTOR_MULTIPLES = {
     "Other":          {"low": 2.0,  "base": 4.0,  "high": 7.0},
 }
 
-# Stage-based discount / premium applied to DCF terminal growth
-STAGE_GROWTH_PREMIUM = {
-    "Pre-Seed":  0.01,
-    "Seed":      0.02,
-    "Series A":  0.025,
-    "Series B":  0.03,
-    "Series C+": 0.035,
-    "Growth":    0.03,
-}
-
 # Stage-based WACC (cost of equity, 100% equity assumed)
-STAGE_WACC = {
+WACC_BY_STAGE = {
     "Pre-Seed":  0.40,
     "Seed":      0.35,
     "Series A":  0.30,
@@ -42,63 +32,96 @@ STAGE_WACC = {
     "Growth":    0.18,
 }
 
-TAX_RATE = 0.25  # UK corporation tax rate used for debt tax shield
-
 
 @dataclass
 class CompanyInputs:
     """Holds all user-supplied company parameters for valuation."""
     stage: str
-    total_debt_gbp: Optional[float] = None
+
+    # DCF assumption overrides
+    tax_rate_pct: Optional[float] = 25.0
+    capex_pct_of_ebitda: Optional[float] = 5.0
+    nwc_pct_of_ebitda: Optional[float] = 3.0
+    target_ebitda_margin_pct: Optional[float] = 25.0
+    terminal_growth_rate_pct: Optional[float] = 3.0
+
+    # WACC builder inputs
+    use_custom_wacc: Optional[bool] = False
+    custom_wacc_pct: Optional[float] = None
+
+    # WACC formula components
+    risk_free_rate_pct: Optional[float] = 4.2
+    equity_risk_premium_pct: Optional[float] = 5.5
+    beta: Optional[float] = None
     cost_of_debt_pct: Optional[float] = 8.0
+    debt_gbp: Optional[float] = 0.0
+    equity_gbp: Optional[float] = None
 
 
-def calculate_wacc(inputs: CompanyInputs,
-                   enterprise_value_gbp: Optional[float] = None) -> tuple[float, str]:
+def calculate_wacc(inputs: CompanyInputs, estimated_ev: float = None) -> tuple:
     """
-    Return (wacc_value, wacc_method_description).
-
-    If total_debt_gbp is provided, positive, and an enterprise_value_gbp is
-    available, compute a true blended WACC (equity + debt).  Otherwise fall
-    back to the stage-based equity-only required return.
+    Returns (wacc_rate, wacc_method_string).
+    Priority: 1) direct custom WACC, 2) WACC formula if beta provided, 3) stage-based default.
     """
-    cost_of_equity = STAGE_WACC.get(inputs.stage, 0.30)
-    debt = inputs.total_debt_gbp or 0.0
+    # Priority 1: user enters WACC directly
+    if inputs.use_custom_wacc and inputs.custom_wacc_pct is not None:
+        wacc = inputs.custom_wacc_pct / 100
+        return wacc, "User-specified WACC"
 
-    if debt > 0 and enterprise_value_gbp and enterprise_value_gbp > 0:
-        equity_value  = max(enterprise_value_gbp - debt, 0.0)
-        total_capital = equity_value + debt
+    # Priority 2: build WACC from formula components if beta is provided
+    if inputs.beta is not None:
+        rfr = (inputs.risk_free_rate_pct or 4.2) / 100
+        erp = (inputs.equity_risk_premium_pct or 5.5) / 100
+        cost_of_equity = rfr + inputs.beta * erp
 
-        weight_equity = equity_value / total_capital
-        weight_debt   = debt / total_capital
+        tax = (inputs.tax_rate_pct or 25.0) / 100
+        kd = (inputs.cost_of_debt_pct or 8.0) / 100
+        after_tax_kd = kd * (1 - tax)
 
-        cost_of_debt_after_tax = (inputs.cost_of_debt_pct or 8.0) / 100 * (1 - TAX_RATE)
+        debt = inputs.debt_gbp or 0.0
+        equity = inputs.equity_gbp or (estimated_ev if estimated_ev else 0.0)
+        total = debt + equity if (debt + equity) > 0 else 1
 
-        wacc_value = (weight_equity * cost_of_equity) + (weight_debt * cost_of_debt_after_tax)
-        description = "Blended WACC (equity + debt)"
-        return wacc_value, description
+        wd = debt / total
+        we = equity / total
 
-    description = (
-        "Equity-only required return "
-        "(100% equity assumed — standard for venture-stage companies)"
-    )
-    return cost_of_equity, description
+        wacc = we * cost_of_equity + wd * after_tax_kd
+        method = (
+            "WACC formula: Ke=" + str(round(cost_of_equity * 100, 1)) + "% "
+            "(Rf=" + str(inputs.risk_free_rate_pct) + "% + B=" + str(inputs.beta)
+            + " x ERP=" + str(inputs.equity_risk_premium_pct) + "%) "
+            "Kd=" + str(round(after_tax_kd * 100, 1)) + "% after-tax "
+            "D/E=" + str(round(wd * 100, 0)) + "/" + str(round(we * 100, 0)) + "%"
+        )
+        return wacc, method
+
+    # Priority 3: stage-based default
+    wacc = WACC_BY_STAGE.get(inputs.stage, 0.25)
+    return wacc, "Stage-based required return (Damodaran methodology) — provide beta to use WACC formula"
 
 
 def _dcf_value(revenue: float, growth_rate: float, ebitda_margin: float,
                wacc: float, terminal_growth: float,
+               tax_rate: float = 0.25, capex_pct: float = 0.05,
+               nwc_pct: float = 0.03,
                years: int = 5, scenario_adj: float = 0.0) -> float:
     """Return DCF enterprise value for a single scenario."""
     g = growth_rate / 100 + scenario_adj
+    # Guard: wacc must exceed terminal_growth
+    if wacc <= terminal_growth:
+        wacc = terminal_growth + 0.01
     margin = ebitda_margin / 100
     pv = 0.0
     rev = revenue
     for yr in range(1, years + 1):
         rev = rev * (1 + g)
-        fcf = rev * margin * 0.7          # rough EBIT → FCF conversion
+        ebitda = rev * margin
+        ebit = ebitda * (1 - capex_pct)
+        nopat = ebit * (1 - tax_rate)
+        fcf = nopat - ebitda * nwc_pct
         pv += fcf / (1 + wacc) ** yr
     # Terminal value (Gordon Growth)
-    terminal_fcf = rev * margin * 0.7 * (1 + terminal_growth)
+    terminal_fcf = rev * margin * (1 - capex_pct) * (1 - tax_rate) * (1 + terminal_growth)
     tv = terminal_fcf / (wacc - terminal_growth)
     pv += tv / (1 + wacc) ** years
     return max(pv, 0)
@@ -106,25 +129,24 @@ def _dcf_value(revenue: float, growth_rate: float, ebitda_margin: float,
 
 def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
                   inputs: CompanyInputs) -> dict:
-    """
-    Return low/base/high DCF values in GBP, plus wacc and wacc_method.
+    """Return low/base/high DCF values in GBP, plus wacc and wacc_method."""
+    tax_rate   = (inputs.tax_rate_pct or 25.0) / 100
+    capex_pct  = (inputs.capex_pct_of_ebitda or 5.0) / 100
+    nwc_pct    = (inputs.nwc_pct_of_ebitda or 3.0) / 100
+    tg         = (inputs.terminal_growth_rate_pct or 3.0) / 100
 
-    Uses calculate_wacc: if the company has debt and a proxy EV is
-    computable, a blended WACC is applied; otherwise stage-based.
-    """
-    stage_wacc = STAGE_WACC.get(inputs.stage, 0.30)
-    tg = STAGE_GROWTH_PREMIUM.get(inputs.stage, 0.025)
+    # Compute a proxy base EV with stage WACC to seed the WACC formula (avoids circularity)
+    stage_wacc = WACC_BY_STAGE.get(inputs.stage, 0.30)
+    proxy_ev = _dcf_value(revenue, growth_pct, ebitda_margin, stage_wacc, tg,
+                          tax_rate, capex_pct, nwc_pct)
 
-    # Compute a proxy base EV with the stage WACC to use as EV input for
-    # the blended WACC calculation (avoids a circular dependency).
-    proxy_ev = _dcf_value(revenue, growth_pct, ebitda_margin, stage_wacc, tg)
+    wacc, wacc_method = calculate_wacc(inputs, estimated_ev=proxy_ev)
 
-    wacc, wacc_method = calculate_wacc(inputs, enterprise_value_gbp=proxy_ev)
-
+    kwargs = dict(tax_rate=tax_rate, capex_pct=capex_pct, nwc_pct=nwc_pct)
     return {
-        "low":         _dcf_value(revenue, growth_pct, ebitda_margin, wacc + 0.05, tg - 0.005, scenario_adj=-0.05),
-        "base":        _dcf_value(revenue, growth_pct, ebitda_margin, wacc,         tg),
-        "high":        _dcf_value(revenue, growth_pct, ebitda_margin, wacc - 0.05, tg + 0.005, scenario_adj=0.05),
+        "low":         _dcf_value(revenue, growth_pct, ebitda_margin, wacc + 0.05, tg - 0.005, scenario_adj=-0.05, **kwargs),
+        "base":        _dcf_value(revenue, growth_pct, ebitda_margin, wacc,         tg,                           **kwargs),
+        "high":        _dcf_value(revenue, growth_pct, ebitda_margin, wacc - 0.05, tg + 0.005, scenario_adj=0.05,  **kwargs),
         "wacc":        wacc,
         "wacc_method": wacc_method,
     }
