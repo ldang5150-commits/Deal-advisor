@@ -991,9 +991,6 @@ def render_results() -> None:
             }
 
             for _rank, match in enumerate(match_list, start=1):
-                # Plain string concatenation — no f-string, no unicode in label
-                _label = "No." + str(_rank) + "  " + match.name + "  |  " + str(match.score) + "/100"
-
                 _domain = (
                     match.website.replace("https://", "").replace(
                         "http://", "").split("/")[0]
@@ -1002,7 +999,7 @@ def render_results() -> None:
                 logo_url = "https://logo.clearbit.com/" + _domain if _domain else ""
                 _initials = "".join(w[0].upper() for w in match.name.split()[:2])
 
-                with st.expander(_label, expanded=(_rank == 1)):
+                with st.expander("No." + str(_rank) + "  " + str(match.name) + "  |  " + str(match.score) + "/100", expanded=(_rank == 1)):
                     # ── Header row ──
                     _hc1, _hc2, _hc3 = st.columns([0.5, 4, 1])
                     with _hc1:
@@ -1011,15 +1008,15 @@ def render_results() -> None:
                         except Exception:
                             st.write(_initials)
                     with _hc2:
-                        st.markdown("**" + match.name + "**")
-                        st.caption(match.description)
+                        st.markdown("**" + str(match.name) + "**")
+                        st.caption(str(match.description))
                     with _hc3:
                         st.metric(label="Score", value=str(match.score) + "/100")
 
                     # ── Website + portfolio ──
                     if match.website:
-                        st.link_button("Visit website", match.website)
-                    st.caption("Portfolio: " + match.notable_portfolio)
+                        st.link_button("Visit website", str(match.website))
+                    st.caption("Portfolio: " + str(match.notable_portfolio))
 
                     st.divider()
 
@@ -1027,22 +1024,22 @@ def render_results() -> None:
                     col_a, col_b = st.columns(2)
 
                     with col_a:
-                        st.markdown("**SECTOR FIT** — " + str(match.sector_score) + "/35")
-                        st.progress(match.sector_score / 35)
-                        st.caption(match.sector_rationale)
-
-                        st.markdown("**GEOGRAPHY FIT** — " + str(match.geo_score) + "/20")
-                        st.progress(match.geo_score / 20)
-                        st.caption(match.geo_rationale)
+                        st.markdown("**SECTOR FIT — " + str(match.sector_score) + "/35**")
+                        st.progress(int(match.sector_score) / 35)
+                        st.caption(str(match.sector_rationale))
+                        st.divider()
+                        st.markdown("**GEOGRAPHY FIT — " + str(match.geo_score) + "/20**")
+                        st.progress(int(match.geo_score) / 20)
+                        st.caption(str(match.geo_rationale))
 
                     with col_b:
-                        st.markdown("**STAGE FIT** — " + str(match.stage_score) + "/35")
-                        st.progress(match.stage_score / 35)
-                        st.caption(match.stage_rationale)
-
-                        st.markdown("**CHEQUE SIZE** — " + str(match.cheque_score) + "/10")
-                        st.progress(match.cheque_score / 10)
-                        st.caption(match.cheque_rationale)
+                        st.markdown("**STAGE FIT — " + str(match.stage_score) + "/35**")
+                        st.progress(int(match.stage_score) / 35)
+                        st.caption(str(match.stage_rationale))
+                        st.divider()
+                        st.markdown("**CHEQUE SIZE — " + str(match.cheque_score) + "/10**")
+                        st.progress(int(match.cheque_score) / 10)
+                        st.caption(str(match.cheque_rationale))
 
         # ──────────────────────────────────────────────────────────────────
         # INVESTMENT MEMO
