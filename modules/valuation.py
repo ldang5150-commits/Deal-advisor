@@ -1,10 +1,9 @@
 """Valuation calculations: DCF, comparable multiples, blended, and projections."""
 
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 
@@ -42,8 +41,11 @@ class CompanyInputs:
     tax_rate_pct: Optional[float] = 25.0
     capex_pct_of_ebitda: Optional[float] = 5.0
     nwc_pct_of_ebitda: Optional[float] = 3.0
+    da_pct_of_revenue: Optional[float] = 3.0
     target_ebitda_margin_pct: Optional[float] = 25.0
     terminal_growth_rate_pct: Optional[float] = 3.0
+    terminal_value_method: Optional[str] = "gordon_growth"   # "gordon_growth" | "exit_multiple"
+    exit_multiple_ebitda: Optional[float] = None
 
     # WACC builder inputs
     use_custom_wacc: Optional[bool] = False
@@ -63,12 +65,9 @@ def calculate_wacc(inputs: CompanyInputs, estimated_ev: float = None) -> tuple:
     Returns (wacc_rate, wacc_method_string).
     Priority: 1) direct custom WACC, 2) WACC formula if beta provided, 3) stage-based default.
     """
-    # Priority 1: user enters WACC directly
     if inputs.use_custom_wacc and inputs.custom_wacc_pct is not None:
-        wacc = inputs.custom_wacc_pct / 100
-        return wacc, "User-specified WACC"
+        return inputs.custom_wacc_pct / 100, "User-specified WACC"
 
-    # Priority 2: build WACC from formula components if beta is provided
     if inputs.beta is not None:
         rfr = (inputs.risk_free_rate_pct or 4.2) / 100
         erp = (inputs.equity_risk_premium_pct or 5.5) / 100
@@ -78,9 +77,9 @@ def calculate_wacc(inputs: CompanyInputs, estimated_ev: float = None) -> tuple:
         kd = (inputs.cost_of_debt_pct or 8.0) / 100
         after_tax_kd = kd * (1 - tax)
 
-        debt = inputs.debt_gbp or 0.0
+        debt   = inputs.debt_gbp or 0.0
         equity = inputs.equity_gbp or (estimated_ev if estimated_ev else 0.0)
-        total = debt + equity if (debt + equity) > 0 else 1
+        total  = (debt + equity) if (debt + equity) > 0 else 1
 
         wd = debt / total
         we = equity / total
@@ -95,60 +94,111 @@ def calculate_wacc(inputs: CompanyInputs, estimated_ev: float = None) -> tuple:
         )
         return wacc, method
 
-    # Priority 3: stage-based default
     wacc = WACC_BY_STAGE.get(inputs.stage, 0.25)
     return wacc, "Stage-based required return (Damodaran methodology) — provide beta to use WACC formula"
 
 
-def _dcf_value(revenue: float, growth_rate: float, ebitda_margin: float,
-               wacc: float, terminal_growth: float,
-               tax_rate: float = 0.25, capex_pct: float = 0.05,
-               nwc_pct: float = 0.03,
-               years: int = 5, scenario_adj: float = 0.0) -> float:
-    """Return DCF enterprise value for a single scenario."""
-    g = growth_rate / 100 + scenario_adj
-    # Guard: wacc must exceed terminal_growth
+def _project_fcf(revenues: list, ebitda: list,
+                 capex_pct: float = 0.05, nwc_pct: float = 0.03,
+                 tax_rate: float = 0.25, da_pct: float = 0.03) -> list:
+    """
+    Return list of unlevered FCFs.
+    FCF = (EBITDA - D&A) * (1 - tax) + D&A - CapEx - NWC
+        = EBITDA*(1-tax) + D&A*tax - CapEx - NWC
+    """
+    fcfs = []
+    for rev, e in zip(revenues, ebitda):
+        da     = rev * da_pct
+        capex  = e * capex_pct
+        nwc    = e * nwc_pct
+        nopat  = (e - da) * (1 - tax_rate)
+        fcf    = nopat + da - capex - nwc
+        fcfs.append(fcf)
+    return fcfs
+
+
+def _project_revenues_ebitda(revenue: float, growth_rate: float,
+                              ebitda_margin: float, years: int = 5,
+                              scenario_adj: float = 0.0) -> tuple:
+    """Return (revenues list, ebitda list) for each year."""
+    g      = growth_rate / 100 + scenario_adj
+    margin = ebitda_margin / 100
+    revs, ebs = [], []
+    rev = revenue
+    for _ in range(years):
+        rev = rev * (1 + g)
+        revs.append(rev)
+        ebs.append(rev * margin)
+    return revs, ebs
+
+
+def _pv_fcfs(fcfs: list, wacc: float) -> float:
+    return sum(f / (1 + wacc) ** (i + 1) for i, f in enumerate(fcfs))
+
+
+def _terminal_value(fcfs: list, ebitda_last: float, wacc: float,
+                    terminal_growth: float, method: str,
+                    exit_multiple: Optional[float]) -> float:
+    """Return present value of terminal value."""
+    years = len(fcfs)
     if wacc <= terminal_growth:
         wacc = terminal_growth + 0.01
-    margin = ebitda_margin / 100
-    pv = 0.0
-    rev = revenue
-    for yr in range(1, years + 1):
-        rev = rev * (1 + g)
-        ebitda = rev * margin
-        ebit = ebitda * (1 - capex_pct)
-        nopat = ebit * (1 - tax_rate)
-        fcf = nopat - ebitda * nwc_pct
-        pv += fcf / (1 + wacc) ** yr
-    # Terminal value (Gordon Growth)
-    terminal_fcf = rev * margin * (1 - capex_pct) * (1 - tax_rate) * (1 + terminal_growth)
-    tv = terminal_fcf / (wacc - terminal_growth)
-    pv += tv / (1 + wacc) ** years
+    if method == "exit_multiple" and exit_multiple:
+        tv_gross = ebitda_last * exit_multiple
+    else:
+        tv_gross = fcfs[-1] * (1 + terminal_growth) / (wacc - terminal_growth)
+    return tv_gross / (1 + wacc) ** years
+
+
+def _dcf_scenario(revenue: float, growth_pct: float, ebitda_margin: float,
+                  wacc: float, terminal_growth: float, tax_rate: float,
+                  capex_pct: float, nwc_pct: float, da_pct: float,
+                  tv_method: str, exit_multiple: Optional[float],
+                  scenario_adj: float = 0.0) -> float:
+    revs, ebs = _project_revenues_ebitda(revenue, growth_pct, ebitda_margin,
+                                         scenario_adj=scenario_adj)
+    eff_wacc = max(wacc, terminal_growth + 0.01)
+    fcfs = _project_fcf(revs, ebs, capex_pct, nwc_pct, tax_rate, da_pct)
+    pv   = _pv_fcfs(fcfs, eff_wacc)
+    pv  += _terminal_value(fcfs, ebs[-1], eff_wacc, terminal_growth,
+                           tv_method, exit_multiple)
     return max(pv, 0)
 
 
 def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
                   inputs: CompanyInputs) -> dict:
-    """Return low/base/high DCF values in GBP, plus wacc and wacc_method."""
-    tax_rate   = (inputs.tax_rate_pct or 25.0) / 100
-    capex_pct  = (inputs.capex_pct_of_ebitda or 5.0) / 100
-    nwc_pct    = (inputs.nwc_pct_of_ebitda or 3.0) / 100
-    tg         = (inputs.terminal_growth_rate_pct or 3.0) / 100
+    """Return low/base/high DCF values in GBP, plus wacc, wacc_method, tv_method."""
+    def _pct(val, default): return (val if val is not None else default) / 100
+    tax_rate    = _pct(inputs.tax_rate_pct, 25.0)
+    capex_pct   = _pct(inputs.capex_pct_of_ebitda, 5.0)
+    nwc_pct     = _pct(inputs.nwc_pct_of_ebitda, 3.0)
+    da_pct      = _pct(inputs.da_pct_of_revenue, 3.0)
+    tg          = _pct(inputs.terminal_growth_rate_pct, 3.0)
+    tv_method   = inputs.terminal_value_method or "gordon_growth"
+    exit_mult   = inputs.exit_multiple_ebitda
 
-    # Compute a proxy base EV with stage WACC to seed the WACC formula (avoids circularity)
+    # Proxy EV with stage WACC to seed WACC formula (avoids circularity)
     stage_wacc = WACC_BY_STAGE.get(inputs.stage, 0.30)
-    proxy_ev = _dcf_value(revenue, growth_pct, ebitda_margin, stage_wacc, tg,
-                          tax_rate, capex_pct, nwc_pct)
+    proxy_ev   = _dcf_scenario(revenue, growth_pct, ebitda_margin, stage_wacc, tg,
+                                tax_rate, capex_pct, nwc_pct, da_pct,
+                                tv_method, exit_mult)
 
     wacc, wacc_method = calculate_wacc(inputs, estimated_ev=proxy_ev)
 
-    kwargs = dict(tax_rate=tax_rate, capex_pct=capex_pct, nwc_pct=nwc_pct)
+    sc = dict(tax_rate=tax_rate, capex_pct=capex_pct, nwc_pct=nwc_pct,
+              da_pct=da_pct, tv_method=tv_method, exit_multiple=exit_mult)
     return {
-        "low":         _dcf_value(revenue, growth_pct, ebitda_margin, wacc + 0.05, tg - 0.005, scenario_adj=-0.05, **kwargs),
-        "base":        _dcf_value(revenue, growth_pct, ebitda_margin, wacc,         tg,                           **kwargs),
-        "high":        _dcf_value(revenue, growth_pct, ebitda_margin, wacc - 0.05, tg + 0.005, scenario_adj=0.05,  **kwargs),
+        "low":        _dcf_scenario(revenue, growth_pct, ebitda_margin,
+                                    wacc + 0.05, tg - 0.005, scenario_adj=-0.05, **sc),
+        "base":       _dcf_scenario(revenue, growth_pct, ebitda_margin,
+                                    wacc, tg, **sc),
+        "high":       _dcf_scenario(revenue, growth_pct, ebitda_margin,
+                                    wacc - 0.05, tg + 0.005, scenario_adj=0.05, **sc),
         "wacc":        wacc,
         "wacc_method": wacc_method,
+        "tv_method":   tv_method,
+        "terminal_growth_pct": (inputs.terminal_growth_rate_pct or 3.0),
+        "exit_multiple_ebitda": exit_mult,
     }
 
 
@@ -171,6 +221,9 @@ def blended_valuation(dcf: dict, comps: dict, dcf_weight: float = 0.5) -> dict:
         "high":        dcf["high"] * dcf_weight + comps["high"] * w2,
         "wacc":        dcf.get("wacc", 0.30),
         "wacc_method": dcf.get("wacc_method", ""),
+        "tv_method":   dcf.get("tv_method", "gordon_growth"),
+        "terminal_growth_pct":  dcf.get("terminal_growth_pct", 3.0),
+        "exit_multiple_ebitda": dcf.get("exit_multiple_ebitda"),
     }
 
 
@@ -178,16 +231,16 @@ def five_year_projection(revenue: float, growth_pct: float,
                          ebitda_margin: float) -> pd.DataFrame:
     """Return DataFrame with 5-year revenue and EBITDA projections."""
     rows = []
-    rev = revenue
-    g = growth_pct / 100
+    rev    = revenue
+    g      = growth_pct / 100
     margin = ebitda_margin / 100
     for yr in range(1, 6):
-        rev = rev * (1 + g)
+        rev    = rev * (1 + g)
         ebitda = rev * margin
         rows.append({
-            "Year": f"Y{yr}",
-            "Revenue (£m)": round(rev / 1_000_000, 2),
-            "EBITDA (£m)":  round(ebitda / 1_000_000, 2),
+            "Year":          f"Y{yr}",
+            "Revenue (£m)":  round(rev / 1_000_000, 2),
+            "EBITDA (£m)":   round(ebitda / 1_000_000, 2),
             "EBITDA Margin": f"{ebitda_margin:.0f}%",
         })
     return pd.DataFrame(rows)

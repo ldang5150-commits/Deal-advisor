@@ -43,8 +43,11 @@ _DEFAULTS = {
     "inp_tax_rate":      25,
     "inp_capex_pct":     5,
     "inp_nwc_pct":       3,
+    "inp_da_pct":        3.0,
     "inp_target_margin": 25,
     "inp_terminal_g":    3.0,
+    "inp_tv_method":     "Gordon Growth Model",
+    "inp_exit_multiple": 12.0,
     # WACC
     "inp_use_custom_wacc": False,
     "inp_custom_wacc":     28.0,
@@ -457,6 +460,9 @@ def render_home() -> None:
             st.number_input("NWC change (% of EBITDA)", min_value=0, max_value=20,
                             key="inp_nwc_pct", step=1,
                             help="Working capital requirements as % of EBITDA")
+            st.number_input("D&A as % of revenue", min_value=0.0, max_value=20.0,
+                            key="inp_da_pct", step=0.5,
+                            help="Depreciation and amortisation as % of revenue. SaaS/software: 2-5%. Asset-heavy: 8-15%.")
         with _d2:
             st.number_input("Target EBITDA margin Year 5 (%)", min_value=-50, max_value=80,
                             key="inp_target_margin", step=1,
@@ -464,6 +470,16 @@ def render_home() -> None:
             st.number_input("Terminal growth rate (%)", min_value=0.0, max_value=8.0,
                             key="inp_terminal_g", step=0.5,
                             help="Long-run growth rate beyond Year 5. Typically 2-4% for developed markets.")
+            _tv_method = st.radio(
+                "Terminal value method",
+                options=["Gordon Growth Model", "Exit Multiple (EV/EBITDA)"],
+                key="inp_tv_method",
+                help="Gordon Growth: assumes FCF grows at terminal rate forever. Exit Multiple: applies an industry EV/EBITDA multiple to Year 5 EBITDA — often more intuitive for early-stage companies.",
+            )
+            if _tv_method == "Exit Multiple (EV/EBITDA)":
+                st.number_input("Exit EV/EBITDA multiple", min_value=1.0, max_value=40.0,
+                                key="inp_exit_multiple", step=0.5,
+                                help="Typical exit multiples by sector: SaaS 12-18x, FinTech 10-15x, HealthTech 8-14x, Marketplace 8-12x")
 
     # ── Section 5: WACC ──
     with st.expander("WACC — calculate from formula or enter directly"):
@@ -546,14 +562,20 @@ def render_results() -> None:
     _cod           = st.session_state.inp_cod
     _openai_key    = st.session_state.inp_openai
 
-    _beta_val = st.session_state.get("inp_beta", None)
+    _beta_val  = st.session_state.get("inp_beta", None)
+    _tv_label  = st.session_state.get("inp_tv_method", "Gordon Growth Model")
+    _tv_method = "exit_multiple" if _tv_label == "Exit Multiple (EV/EBITDA)" else "gordon_growth"
+    _exit_mult = float(st.session_state.get("inp_exit_multiple", 12.0)) if _tv_method == "exit_multiple" else None
     _inputs = CompanyInputs(
         stage=_stage,
         tax_rate_pct=float(st.session_state.get("inp_tax_rate", 25)),
         capex_pct_of_ebitda=float(st.session_state.get("inp_capex_pct", 5)),
         nwc_pct_of_ebitda=float(st.session_state.get("inp_nwc_pct", 3)),
+        da_pct_of_revenue=float(st.session_state.get("inp_da_pct", 3.0)),
         target_ebitda_margin_pct=float(st.session_state.get("inp_target_margin", 25)),
         terminal_growth_rate_pct=float(st.session_state.get("inp_terminal_g", 3.0)),
+        terminal_value_method=_tv_method,
+        exit_multiple_ebitda=_exit_mult,
         use_custom_wacc=bool(st.session_state.get("inp_use_custom_wacc", False)),
         custom_wacc_pct=float(st.session_state.get("inp_custom_wacc", 28.0)),
         risk_free_rate_pct=float(st.session_state.get("inp_rfr", 4.2)),
@@ -625,8 +647,16 @@ def render_results() -> None:
                 f"Enterprise value range · {company} · {_sector} · {_stage}"
             )
 
-            # WACC callout
-            st.info("WACC: " + str(round(_blend["wacc"] * 100, 1)) + "% — " + str(_blend["wacc_method"]))
+            # WACC + terminal value callout
+            _tv_m = _blend.get("tv_method", "gordon_growth")
+            if _tv_m == "exit_multiple" and _blend.get("exit_multiple_ebitda"):
+                _tv_line = "Terminal value: " + str(_blend["exit_multiple_ebitda"]) + "x EV/EBITDA exit on Year 5 EBITDA"
+            else:
+                _tv_line = "Terminal value: Gordon Growth at " + str(round(_blend.get("terminal_growth_pct", 3.0), 1)) + "% perpetuity growth"
+            st.info(
+                "WACC: " + str(round(_blend["wacc"] * 100, 1)) + "% — " + str(_blend["wacc_method"])
+                + "\n\n" + _tv_line
+            )
 
             st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
