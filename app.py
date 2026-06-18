@@ -448,7 +448,7 @@ def render_home() -> None:
                                    key="inp_burn", step=10_000, format="%d")
 
     # ── Section 4: DCF assumptions ──
-    with st.expander("DCF assumptions — optional overrides"):
+    with st.expander("DCF assumptions - optional overrides"):
         _d1, _d2 = st.columns(2)
         with _d1:
             st.number_input("Tax rate (%)", min_value=0, max_value=50,
@@ -482,7 +482,7 @@ def render_home() -> None:
                                 help="Typical exit multiples by sector: SaaS 12-18x, FinTech 10-15x, HealthTech 8-14x, Marketplace 8-12x")
 
     # ── Section 5: WACC ──
-    with st.expander("WACC — calculate from formula or enter directly"):
+    with st.expander("WACC - calculate from formula or enter directly"):
         _use_custom = st.toggle("Enter WACC directly instead of using formula",
                                 key="inp_use_custom_wacc")
         if _use_custom:
