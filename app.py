@@ -147,6 +147,9 @@ st.markdown("""
     width: 100% !important;
     display: flex !important;
     justify-content: flex-start !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   /* ── Nav inactive button (wrapper trick) ── */
@@ -162,6 +165,9 @@ st.markdown("""
     width: 100% !important;
     display: flex !important;
     justify-content: flex-start !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
   .element-container:has(.nav-inactive) + .element-container .stButton > button:hover {
     background: #F1F5F9 !important;
@@ -242,12 +248,6 @@ st.markdown("""
   /* ── Dividers ── */
   hr { border-color: #E2E8F0 !important; margin: 1rem 0 !important; }
 
-  /* ── Expanders ── */
-  [data-testid="stExpander"] {
-    background: #FFFFFF !important;
-    border: 1px solid #E2E8F0 !important;
-    border-radius: 8px !important;
-  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -597,7 +597,7 @@ def render_results() -> None:
     _runway = int(_cash / _burn) if _burn > 0 else 999
 
     # ── Layout: sidebar (1) + main (4) ──
-    nav_col, main_col = st.columns([1, 4], gap="large")
+    nav_col, main_col = st.columns([1.2, 4], gap="large")
 
     # ── LEFT SIDEBAR NAV ──
     with nav_col:
@@ -614,8 +614,6 @@ def render_results() -> None:
             "Valuation",
             "Fundraising",
             "VC matching",
-            "Investment memo",
-            "M&A analysis",
         ]
         for item in NAV_ITEMS:
             is_active = st.session_state.active_tab == item
@@ -757,7 +755,8 @@ def render_results() -> None:
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("5-year revenue projection")
 
-            _proj = five_year_projection(_revenue, _growth_pct, _ebitda_margin)
+            _target_margin = float(st.session_state.get("inp_target_margin", _ebitda_margin))
+            _proj = five_year_projection(_revenue, _growth_pct, _ebitda_margin, _target_margin)
 
             # Styled HTML table
             _trows = ""
@@ -942,9 +941,13 @@ def render_results() -> None:
                 ("EBITDA visibility", _ebitda_margin >= 0, f"{_ebitda_margin}% margin"),
             ]
             for _lbl, _ok, _note in _tips:
-                _kind = "success" if _ok else "warning"
-                _icon = "+" if _ok else "!"
-                callout(f"[{_icon}] <b>{_lbl}</b> — {_note}", kind=_kind)
+                _color = "#10B981" if _ok else "#EF4444"
+                st.markdown(
+                    f'<div style="border-left:3px solid {_color};padding:8px 16px;margin-bottom:8px;background:#F8FAFC;border-radius:0 6px 6px 0;">'
+                    f'<span style="font-size:14px;color:#1F2937;"><strong>{_lbl}</strong> — {_note}</span>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
 
         # ──────────────────────────────────────────────────────────────────
         # VC MATCHING
@@ -1015,128 +1018,42 @@ def render_results() -> None:
 
             st.divider()
 
+            def _bar(score, max_score):
+                pct = score / max_score if max_score > 0 else 0
+                color = "#10B981" if pct >= 0.85 else "#EAB308" if pct >= 0.60 else "#EF4444"
+                return f'<div style="background:#F1F5F9;border-radius:4px;height:8px;width:100%;margin:4px 0 8px 0;"><div style="background:{color};border-radius:4px;height:8px;width:{pct*100:.0f}%;"></div></div>'
+
             for rank, match in enumerate(match_list, start=1):
                 label = "No." + str(rank) + "  " + str(match.name) + "  |  " + str(match.score) + "/100"
                 st.markdown("---")
-                _vc_key = "show_vc_" + str(rank)
-                if _vc_key not in st.session_state:
-                    st.session_state[_vc_key] = (rank == 1)
                 st.markdown("**" + label + "**")
-                if st.button("Toggle details", key="btn_vc_" + str(rank)):
-                    st.session_state[_vc_key] = not st.session_state[_vc_key]
-                    st.rerun()
-                if st.session_state[_vc_key]:
-                    st.markdown("**" + str(match.name) + "**")
-                    st.caption(str(match.description))
-                    st.link_button("Visit website", str(match.website))
-                    st.caption("Portfolio: " + str(match.notable_portfolio))
+                st.divider()
+                st.markdown("**" + str(match.name) + "**")
+                st.caption(str(match.description))
+                st.link_button("Visit website", str(match.website))
+                st.caption("Portfolio: " + str(match.notable_portfolio))
+                st.divider()
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    st.markdown("**SECTOR FIT - " + str(match.sector_score) + "/35**")
+                    st.markdown(_bar(int(match.sector_score), 35), unsafe_allow_html=True)
+                    st.caption(str(match.sector_rationale))
                     st.divider()
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.markdown("**SECTOR FIT - " + str(match.sector_score) + "/35**")
-                        st.progress(int(match.sector_score) / 35)
-                        st.caption(str(match.sector_rationale))
-                        st.divider()
-                        st.markdown("**GEOGRAPHY FIT - " + str(match.geo_score) + "/20**")
-                        st.progress(int(match.geo_score) / 20)
-                        st.caption(str(match.geo_rationale))
-                    with col_b:
-                        st.markdown("**STAGE FIT - " + str(match.stage_score) + "/35**")
-                        st.progress(int(match.stage_score) / 35)
-                        st.caption(str(match.stage_rationale))
-                        st.divider()
-                        st.markdown("**CHEQUE SIZE - " + str(match.cheque_score) + "/10**")
-                        st.progress(int(match.cheque_score) / 10)
-                        st.caption(str(match.cheque_rationale))
+                    st.markdown("**GEOGRAPHY FIT - " + str(match.geo_score) + "/20**")
+                    st.markdown(_bar(int(match.geo_score), 20), unsafe_allow_html=True)
+                    st.caption(str(match.geo_rationale))
+                with col_b:
+                    st.markdown("**STAGE FIT - " + str(match.stage_score) + "/35**")
+                    st.markdown(_bar(int(match.stage_score), 35), unsafe_allow_html=True)
+                    st.caption(str(match.stage_rationale))
+                    st.divider()
+                    st.markdown("**CHEQUE SIZE - " + str(match.cheque_score) + "/10**")
+                    st.markdown(_bar(int(match.cheque_score), 10), unsafe_allow_html=True)
+                    st.caption(str(match.cheque_rationale))
 
         # ──────────────────────────────────────────────────────────────────
         # INVESTMENT MEMO
         # ──────────────────────────────────────────────────────────────────
-        elif tab == "Investment memo":
-            section_header("Investment memo", f"AI-generated memo · {company}")
-
-            if not _openai_key:
-                st.markdown(
-                    f"<div style='background:#FFFFFF;border:1px solid #E2E8F0;"
-                    f"border-radius:8px;padding:48px 32px;text-align:center;"
-                    f"margin:24px 0;'>"
-                    f"<p style='font-size:32px;margin:0 0 16px;'>[ key ]</p>"
-                    f"<p style='font-size:18px;font-weight:500;color:{BLUE};"
-                    f"margin:0 0 8px;'>OpenAI API key required</p>"
-                    f"<p style='font-size:14px;color:#64748B;margin:0;'>"
-                    f"Add your API key in the Settings section of the left sidebar.</p>"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
-            else:
-                try:
-                    import openai
-                    from prompts.prompts import MEMO_SYSTEM, MEMO_USER
-                    if st.button("Generate memo", key="gen_memo_btn"):
-                        with st.spinner("Generating with GPT-4o..."):
-                            _client = openai.OpenAI(api_key=_openai_key)
-                            _prompt = MEMO_USER.format(
-                                company_name=company, sector=_sector, stage=_stage,
-                                geography=_geography, revenue=_revenue,
-                                growth=_growth_pct, ebitda_margin=_ebitda_margin,
-                                cash=_cash, burn=_burn,
-                                valuation=_blend["base"]/1e6,
-                            )
-                            _resp = _client.chat.completions.create(
-                                model="gpt-4o",
-                                messages=[{"role": "system", "content": MEMO_SYSTEM},
-                                          {"role": "user",   "content": _prompt}],
-                                max_tokens=1200,
-                            )
-                            st.markdown(_resp.choices[0].message.content)
-                except ImportError:
-                    st.error("openai package not installed. Run: pip install openai")
-                except Exception as e:
-                    st.error(f"Error: {e}")
-
-        # ──────────────────────────────────────────────────────────────────
-        # M&A ANALYSIS
-        # ──────────────────────────────────────────────────────────────────
-        elif tab == "M&A analysis":
-            section_header("M&A analysis", f"Strategic options · {company}")
-
-            if not _openai_key:
-                st.markdown(
-                    f"<div style='background:#FFFFFF;border:1px solid #E2E8F0;"
-                    f"border-radius:8px;padding:48px 32px;text-align:center;"
-                    f"margin:24px 0;'>"
-                    f"<p style='font-size:32px;margin:0 0 16px;'>[ key ]</p>"
-                    f"<p style='font-size:18px;font-weight:500;color:{BLUE};"
-                    f"margin:0 0 8px;'>OpenAI API key required</p>"
-                    f"<p style='font-size:14px;color:#64748B;margin:0;'>"
-                    f"Add your API key in the Settings section of the left sidebar.</p>"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
-            else:
-                try:
-                    import openai
-                    from prompts.prompts import MA_SYSTEM, MA_USER
-                    if st.button("Generate M&A analysis", key="gen_ma_btn"):
-                        with st.spinner("Generating with GPT-4o..."):
-                            _client = openai.OpenAI(api_key=_openai_key)
-                            _prompt = MA_USER.format(
-                                company_name=company, sector=_sector, stage=_stage,
-                                revenue=_revenue, growth=_growth_pct,
-                                ebitda_margin=_ebitda_margin,
-                                valuation=_blend["base"]/1e6,
-                            )
-                            _resp = _client.chat.completions.create(
-                                model="gpt-4o",
-                                messages=[{"role": "system", "content": MA_SYSTEM},
-                                          {"role": "user",   "content": _prompt}],
-                                max_tokens=1200,
-                            )
-                            st.markdown(_resp.choices[0].message.content)
-                except ImportError:
-                    st.error("openai package not installed. Run: pip install openai")
-                except Exception as e:
-                    st.error(f"Error: {e}")
 
 
 # ── Page router ───────────────────────────────────────────────────────────────

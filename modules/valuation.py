@@ -228,19 +228,23 @@ def blended_valuation(dcf: dict, comps: dict, dcf_weight: float = 0.5) -> dict:
 
 
 def five_year_projection(revenue: float, growth_pct: float,
-                         ebitda_margin: float) -> pd.DataFrame:
+                         ebitda_margin: float,
+                         target_ebitda_margin: float = None) -> pd.DataFrame:
     """Return DataFrame with 5-year revenue and EBITDA projections."""
     rows = []
-    rev    = revenue
-    g      = growth_pct / 100
-    margin = ebitda_margin / 100
+    rev = revenue
+    g = growth_pct / 100
+    base_m = ebitda_margin
+    target_m = target_ebitda_margin if target_ebitda_margin is not None else base_m
     for yr in range(1, 6):
-        rev    = rev * (1 + g)
+        margin_pct = base_m + (target_m - base_m) * ((yr - 1) / max(4, 1))
+        margin = margin_pct / 100
+        rev = rev * (1 + g)
         ebitda = rev * margin
         rows.append({
             "Year":          f"Y{yr}",
             "Revenue (£m)":  round(rev / 1_000_000, 2),
             "EBITDA (£m)":   round(ebitda / 1_000_000, 2),
-            "EBITDA Margin": f"{ebitda_margin:.0f}%",
+            "EBITDA Margin": f"{margin_pct:.0f}%",
         })
     return pd.DataFrame(rows)
