@@ -632,14 +632,14 @@ def render_results() -> None:
             "color:#94A3B8;margin:0 0 6px;padding:0 8px;'>Settings</p>",
             unsafe_allow_html=True,
         )
-        with st.expander("+ API key"):
-            st.text_input(
-                "OpenAI API key",
-                key="inp_openai",
-                type="password",
-                placeholder="sk-...",
-                label_visibility="collapsed",
-            )
+        st.markdown("**API key**")
+        st.text_input(
+            "OpenAI API key",
+            key="inp_openai",
+            type="password",
+            placeholder="sk-...",
+            label_visibility="collapsed",
+        )
 
     # ── MAIN CONTENT ──
     with main_col:
@@ -891,7 +891,7 @@ def render_results() -> None:
             ))
             fig_pie.update_layout(
                 title=f"Use of {fmt_gbp(_recommended)} raise",
-                showlegend=False, **PLOTLY_BASE,
+                showlegend=False, **{k: v for k, v in PLOTLY_BASE.items() if k not in ("legend",)},
             )
             st.plotly_chart(fig_pie, use_container_width=True)
 
@@ -929,7 +929,7 @@ def render_results() -> None:
                 yaxis=dict(title="£m", **AXIS_CLEAN),
                 legend=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0"),
                 margin=dict(l=0, r=0, t=30, b=0),
-                **{k: v for k, v in PLOTLY_BASE.items() if k not in ("margin",)},
+                **{k: v for k, v in PLOTLY_BASE.items() if k not in ("margin", "legend", "showlegend")},
             )
             st.plotly_chart(fig_burn, use_container_width=True)
 
@@ -1017,7 +1017,15 @@ def render_results() -> None:
 
             for rank, match in enumerate(match_list, start=1):
                 label = "No." + str(rank) + "  " + str(match.name) + "  |  " + str(match.score) + "/100"
-                with st.expander(label, expanded=(rank == 1)):
+                st.markdown("---")
+                _vc_key = "show_vc_" + str(rank)
+                if _vc_key not in st.session_state:
+                    st.session_state[_vc_key] = (rank == 1)
+                st.markdown("**" + label + "**")
+                if st.button("Toggle details", key="btn_vc_" + str(rank)):
+                    st.session_state[_vc_key] = not st.session_state[_vc_key]
+                    st.rerun()
+                if st.session_state[_vc_key]:
                     st.markdown("**" + str(match.name) + "**")
                     st.caption(str(match.description))
                     st.link_button("Visit website", str(match.website))
@@ -1025,19 +1033,19 @@ def render_results() -> None:
                     st.divider()
                     col_a, col_b = st.columns(2)
                     with col_a:
-                        st.markdown("**SECTOR FIT — " + str(match.sector_score) + "/35**")
+                        st.markdown("**SECTOR FIT - " + str(match.sector_score) + "/35**")
                         st.progress(int(match.sector_score) / 35)
                         st.caption(str(match.sector_rationale))
                         st.divider()
-                        st.markdown("**GEOGRAPHY FIT — " + str(match.geo_score) + "/20**")
+                        st.markdown("**GEOGRAPHY FIT - " + str(match.geo_score) + "/20**")
                         st.progress(int(match.geo_score) / 20)
                         st.caption(str(match.geo_rationale))
                     with col_b:
-                        st.markdown("**STAGE FIT — " + str(match.stage_score) + "/35**")
+                        st.markdown("**STAGE FIT - " + str(match.stage_score) + "/35**")
                         st.progress(int(match.stage_score) / 35)
                         st.caption(str(match.stage_rationale))
                         st.divider()
-                        st.markdown("**CHEQUE SIZE — " + str(match.cheque_score) + "/10**")
+                        st.markdown("**CHEQUE SIZE - " + str(match.cheque_score) + "/10**")
                         st.progress(int(match.cheque_score) / 10)
                         st.caption(str(match.cheque_rationale))
 
