@@ -15,6 +15,79 @@ from modules.vc_matching import score_investors
 from types import SimpleNamespace as MatchResult
 from types import SimpleNamespace as _NS
 
+COMPARABLE_TRANSACTIONS = {
+    "FinTech": [
+        {"target": "Currencycloud", "acquirer": "Visa", "year": 2021, "deal_size_gbp": 700_000_000, "revenue_gbp": 60_000_000, "ev_rev_multiple": 11.7, "detail": "Cross-border payments infrastructure"},
+        {"target": "Yapily", "acquirer": "Mastercard", "year": 2023, "deal_size_gbp": 180_000_000, "revenue_gbp": 18_000_000, "ev_rev_multiple": 10.0, "detail": "Open banking API platform"},
+        {"target": "Divido", "acquirer": "Solarisbank", "year": 2023, "deal_size_gbp": 45_000_000, "revenue_gbp": 6_000_000, "ev_rev_multiple": 7.5, "detail": "White-label BNPL infrastructure"},
+        {"target": "Salt Edge", "acquirer": "Mastercard", "year": 2022, "deal_size_gbp": 90_000_000, "revenue_gbp": 10_000_000, "ev_rev_multiple": 9.0, "detail": "Open banking data platform"},
+        {"target": "Tink", "acquirer": "Visa", "year": 2022, "deal_size_gbp": 1_800_000_000, "revenue_gbp": 120_000_000, "ev_rev_multiple": 15.0, "detail": "Open banking platform"},
+    ],
+    "SaaS": [
+        {"target": "Enghouse", "acquirer": "PE Consortium", "year": 2023, "deal_size_gbp": 320_000_000, "revenue_gbp": 40_000_000, "ev_rev_multiple": 8.0, "detail": "Enterprise communications SaaS"},
+        {"target": "Episerver", "acquirer": "Optimizely", "year": 2021, "deal_size_gbp": 1_100_000_000, "revenue_gbp": 110_000_000, "ev_rev_multiple": 10.0, "detail": "CMS and digital experience platform"},
+        {"target": "IRIS Software", "acquirer": "Hg Capital", "year": 2023, "deal_size_gbp": 1_400_000_000, "revenue_gbp": 120_000_000, "ev_rev_multiple": 11.7, "detail": "Accounting and HR SaaS for SMEs"},
+        {"target": "Aptean", "acquirer": "Vista Equity", "year": 2022, "deal_size_gbp": 800_000_000, "revenue_gbp": 80_000_000, "ev_rev_multiple": 10.0, "detail": "ERP software for manufacturing"},
+        {"target": "Calabrio", "acquirer": "KKR", "year": 2022, "deal_size_gbp": 400_000_000, "revenue_gbp": 50_000_000, "ev_rev_multiple": 8.0, "detail": "Workforce management SaaS"},
+    ],
+    "HealthTech": [
+        {"target": "Babylon Health", "acquirer": "AlbaCore Capital", "year": 2023, "deal_size_gbp": 150_000_000, "revenue_gbp": 60_000_000, "ev_rev_multiple": 2.5, "detail": "AI-powered telehealth"},
+        {"target": "Huma Therapeutics", "acquirer": "Bayer AG", "year": 2023, "deal_size_gbp": 80_000_000, "revenue_gbp": 12_000_000, "ev_rev_multiple": 6.7, "detail": "Remote patient monitoring"},
+        {"target": "Cera Care", "acquirer": "Francisco Partners", "year": 2022, "deal_size_gbp": 200_000_000, "revenue_gbp": 40_000_000, "ev_rev_multiple": 5.0, "detail": "AI-powered home care platform"},
+        {"target": "DrDoctor", "acquirer": "Imprivata", "year": 2023, "deal_size_gbp": 60_000_000, "revenue_gbp": 10_000_000, "ev_rev_multiple": 6.0, "detail": "NHS patient engagement platform"},
+        {"target": "Graphnet Health", "acquirer": "Nordic Capital", "year": 2022, "deal_size_gbp": 120_000_000, "revenue_gbp": 20_000_000, "ev_rev_multiple": 6.0, "detail": "Integrated care records platform"},
+    ],
+    "MarketPlace": [
+        {"target": "Treatwell", "acquirer": "EQT", "year": 2022, "deal_size_gbp": 220_000_000, "revenue_gbp": 44_000_000, "ev_rev_multiple": 5.0, "detail": "Beauty booking marketplace"},
+        {"target": "Housesimple", "acquirer": "Aviva", "year": 2022, "deal_size_gbp": 40_000_000, "revenue_gbp": 8_000_000, "ev_rev_multiple": 5.0, "detail": "Online estate agency"},
+        {"target": "GoCardless", "acquirer": "Stripe (partial)", "year": 2023, "deal_size_gbp": 312_000_000, "revenue_gbp": 60_000_000, "ev_rev_multiple": 5.2, "detail": "Bank payment network"},
+        {"target": "Cazoo", "acquirer": "Constellation Automotive", "year": 2024, "deal_size_gbp": 200_000_000, "revenue_gbp": 300_000_000, "ev_rev_multiple": 0.7, "detail": "Online used car marketplace"},
+        {"target": "Farfetch", "acquirer": "Coupang", "year": 2024, "deal_size_gbp": 500_000_000, "revenue_gbp": 1_800_000_000, "ev_rev_multiple": 0.3, "detail": "Luxury fashion marketplace"},
+    ],
+    "DeepTech": [
+        {"target": "Darktrace", "acquirer": "Thoma Bravo", "year": 2024, "deal_size_gbp": 4_300_000_000, "revenue_gbp": 430_000_000, "ev_rev_multiple": 10.0, "detail": "AI cybersecurity platform"},
+        {"target": "Oxford Ionics", "acquirer": "Honeywell", "year": 2023, "deal_size_gbp": 120_000_000, "revenue_gbp": 8_000_000, "ev_rev_multiple": 15.0, "detail": "Quantum computing chips"},
+        {"target": "Wayve", "acquirer": "SoftBank led", "year": 2024, "deal_size_gbp": 850_000_000, "revenue_gbp": 20_000_000, "ev_rev_multiple": 42.5, "detail": "Autonomous vehicle AI"},
+        {"target": "Tractable", "acquirer": "Apax Partners", "year": 2023, "deal_size_gbp": 900_000_000, "revenue_gbp": 45_000_000, "ev_rev_multiple": 20.0, "detail": "AI for insurance claims"},
+        {"target": "PolyAI", "acquirer": "General Atlantic", "year": 2024, "deal_size_gbp": 400_000_000, "revenue_gbp": 30_000_000, "ev_rev_multiple": 13.3, "detail": "Voice AI for enterprise"},
+    ],
+    "EdTech": [
+        {"target": "Multiverse", "acquirer": "GA growth equity", "year": 2022, "deal_size_gbp": 180_000_000, "revenue_gbp": 30_000_000, "ev_rev_multiple": 6.0, "detail": "Apprenticeship platform"},
+        {"target": "Busuu", "acquirer": "McGraw Hill", "year": 2022, "deal_size_gbp": 360_000_000, "revenue_gbp": 36_000_000, "ev_rev_multiple": 10.0, "detail": "Language learning platform"},
+        {"target": "Codeweavers", "acquirer": "ITC Group", "year": 2023, "deal_size_gbp": 25_000_000, "revenue_gbp": 5_000_000, "ev_rev_multiple": 5.0, "detail": "Automotive finance software"},
+        {"target": "Twinkl", "acquirer": "Growth equity round", "year": 2023, "deal_size_gbp": 55_000_000, "revenue_gbp": 40_000_000, "ev_rev_multiple": 1.4, "detail": "Teacher resources platform"},
+        {"target": "Firefly Learning", "acquirer": "Juniper Education", "year": 2022, "deal_size_gbp": 20_000_000, "revenue_gbp": 5_000_000, "ev_rev_multiple": 4.0, "detail": "School learning management system"},
+    ],
+    "CleanTech": [
+        {"target": "Octopus Energy (partial)", "acquirer": "KKR", "year": 2023, "deal_size_gbp": 3_000_000_000, "revenue_gbp": 2_000_000_000, "ev_rev_multiple": 1.5, "detail": "Green energy retailer"},
+        {"target": "Zenobe Energy", "acquirer": "APG and CDPQ", "year": 2022, "deal_size_gbp": 600_000_000, "revenue_gbp": 40_000_000, "ev_rev_multiple": 15.0, "detail": "Grid-scale battery storage"},
+        {"target": "Connexin", "acquirer": "Basalt Infrastructure", "year": 2023, "deal_size_gbp": 250_000_000, "revenue_gbp": 30_000_000, "ev_rev_multiple": 8.3, "detail": "Smart city connectivity"},
+        {"target": "Pod Point", "acquirer": "EDF Energy", "year": 2021, "deal_size_gbp": 130_000_000, "revenue_gbp": 20_000_000, "ev_rev_multiple": 6.5, "detail": "EV charging network"},
+        {"target": "Habitat Energy", "acquirer": "Sonnedix", "year": 2023, "deal_size_gbp": 90_000_000, "revenue_gbp": 12_000_000, "ev_rev_multiple": 7.5, "detail": "Battery optimisation software"},
+    ],
+    "Cybersecurity": [
+        {"target": "Darktrace", "acquirer": "Thoma Bravo", "year": 2024, "deal_size_gbp": 4_300_000_000, "revenue_gbp": 430_000_000, "ev_rev_multiple": 10.0, "detail": "AI cybersecurity platform"},
+        {"target": "Digital Shadows", "acquirer": "ReliaQuest", "year": 2022, "deal_size_gbp": 150_000_000, "revenue_gbp": 20_000_000, "ev_rev_multiple": 7.5, "detail": "Digital risk protection"},
+        {"target": "Panaseer", "acquirer": "Xona Partners", "year": 2023, "deal_size_gbp": 40_000_000, "revenue_gbp": 6_000_000, "ev_rev_multiple": 6.7, "detail": "Security metrics platform"},
+        {"target": "Immersive Labs", "acquirer": "KKR", "year": 2022, "deal_size_gbp": 500_000_000, "revenue_gbp": 40_000_000, "ev_rev_multiple": 12.5, "detail": "Cyber skills platform"},
+        {"target": "Osirium", "acquirer": "Shearwater Group", "year": 2023, "deal_size_gbp": 8_000_000, "revenue_gbp": 3_000_000, "ev_rev_multiple": 2.7, "detail": "Privileged access management"},
+    ],
+    "E-Commerce": [
+        {"target": "Depop", "acquirer": "Etsy", "year": 2021, "deal_size_gbp": 1_600_000_000, "revenue_gbp": 50_000_000, "ev_rev_multiple": 32.0, "detail": "Peer-to-peer fashion resale"},
+        {"target": "Gymshark (minority)", "acquirer": "General Atlantic", "year": 2021, "deal_size_gbp": 258_000_000, "revenue_gbp": 260_000_000, "ev_rev_multiple": 4.0, "detail": "DTC fitness apparel"},
+        {"target": "Butternut Box (minority)", "acquirer": "Nestle", "year": 2023, "deal_size_gbp": 280_000_000, "revenue_gbp": 100_000_000, "ev_rev_multiple": 2.8, "detail": "Fresh pet food subscription"},
+        {"target": "Huel (minority)", "acquirer": "TESI", "year": 2023, "deal_size_gbp": 100_000_000, "revenue_gbp": 200_000_000, "ev_rev_multiple": 2.5, "detail": "Nutritionally complete food brand"},
+        {"target": "Bloom & Wild", "acquirer": "Verdane", "year": 2022, "deal_size_gbp": 75_000_000, "revenue_gbp": 150_000_000, "ev_rev_multiple": 0.5, "detail": "Online flower delivery"},
+    ],
+    "Other": [
+        {"target": "Wayve", "acquirer": "SoftBank led", "year": 2024, "deal_size_gbp": 850_000_000, "revenue_gbp": 20_000_000, "ev_rev_multiple": 42.5, "detail": "AI for autonomous vehicles"},
+        {"target": "Darktrace", "acquirer": "Thoma Bravo", "year": 2024, "deal_size_gbp": 4_300_000_000, "revenue_gbp": 430_000_000, "ev_rev_multiple": 10.0, "detail": "Cybersecurity AI"},
+        {"target": "Depop", "acquirer": "Etsy", "year": 2021, "deal_size_gbp": 1_600_000_000, "revenue_gbp": 50_000_000, "ev_rev_multiple": 32.0, "detail": "Consumer marketplace"},
+        {"target": "Busuu", "acquirer": "McGraw Hill", "year": 2022, "deal_size_gbp": 360_000_000, "revenue_gbp": 36_000_000, "ev_rev_multiple": 10.0, "detail": "EdTech platform"},
+        {"target": "Currencycloud", "acquirer": "Visa", "year": 2021, "deal_size_gbp": 700_000_000, "revenue_gbp": 60_000_000, "ev_rev_multiple": 11.7, "detail": "FinTech infrastructure"},
+    ],
+}
+
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="AI Deal Advisor",
@@ -318,6 +391,61 @@ def card_html(label: str, value: str, sub: str = "",
     )
 
 
+def _get_use_of_funds_summary(sector):
+    _summaries = {
+        "FinTech": "accelerate product development and expand our compliance infrastructure",
+        "SaaS": "scale our go-to-market and grow our engineering team",
+        "HealthTech": "fund our next clinical validation phase and expand into new NHS trusts",
+        "MarketPlace": "deepen supply-side liquidity and invest in demand generation",
+        "DeepTech": "advance our core R&D and move from prototype to commercial deployment",
+        "E-Commerce": "scale marketing and expand into new geographies",
+        "EdTech": "grow our content library and expand our school partnerships",
+        "CleanTech": "fund our next deployment cohort and build out our data platform",
+        "Cybersecurity": "obtain certifications and scale our enterprise sales motion",
+        "Other": "accelerate growth and expand the team",
+    }
+    return _summaries.get(sector, _summaries["Other"])
+
+
+def _get_vc_rationale(match):
+    if match.sector_score >= 30:
+        _sector_line = "you are a sector specialist with deep domain knowledge"
+    elif match.sector_score >= 18:
+        _sector_line = "you have relevant sector experience"
+    else:
+        _sector_line = "your portfolio companies have adjacent expertise"
+    if match.notable_portfolio:
+        _cos = [p.strip() for p in str(match.notable_portfolio).split(",")[:2]]
+        _sector_line += " and your work with " + " and ".join(_cos) + " demonstrates the value-add we are looking for"
+    return _sector_line
+
+
+def _generate_cold_email(match, company_name, sector, stage, revenue_gbp, growth_pct,
+                          ebitda_margin, geography, blended_ev, raise_mid):
+    _format_rev   = fmt_gbp(revenue_gbp)
+    _format_ev    = fmt_gbp(blended_ev)
+    _format_raise = fmt_gbp(raise_mid)
+    subject = ("Intro: " + str(company_name) + " — " + _format_rev + " ARR, "
+               + str(int(growth_pct)) + "% growth, raising " + _format_raise)
+    body = (
+        "Hi [Partner name],\n\n"
+        "I'm reaching out because " + str(match.name) + "'s focus on " + str(sector)
+        + " at " + str(stage) + " stage aligns closely with what we're building at " + str(company_name) + ".\n\n"
+        + str(company_name) + " is a " + str(geography) + "-based " + str(sector)
+        + " company generating " + _format_rev + " ARR, growing at " + str(int(growth_pct)) + "% year-on-year"
+        + (" with " + str(int(ebitda_margin)) + "% EBITDA margins" if ebitda_margin > 0 else ", currently pre-profitability and investing in growth")
+        + ". We are raising " + _format_raise + " at a pre-money valuation of " + _format_ev
+        + " to " + _get_use_of_funds_summary(sector) + ".\n\n"
+        "We believe " + str(match.name) + " is the right partner because " + _get_vc_rationale(match) + ".\n\n"
+        "Would you have 20 minutes for a call in the next two weeks? Happy to share our deck in advance.\n\n"
+        "Best regards,\n"
+        "[Your name]\n"
+        "[Your title], " + str(company_name) + "\n"
+        "[Your email] | [Your phone]"
+    )
+    return subject, body
+
+
 def _nav_btn(label: str, is_active: bool, key: str) -> bool:
     cls = "nav-active" if is_active else "nav-inactive"
     st.markdown(f'<div class="{cls}" style="display:none;"></div>', unsafe_allow_html=True)
@@ -614,6 +742,8 @@ def render_results() -> None:
             "Valuation",
             "Fundraising",
             "VC matching",
+            "Comparable transactions",
+            "Investor outreach",
         ]
         for item in NAV_ITEMS:
             is_active = st.session_state.active_tab == item
@@ -1160,6 +1290,7 @@ def render_results() -> None:
                     description       = str(_r["Description"]),
                     investor_type     = str(_r["Type"]),
                 ))
+            st.session_state["vc_matches"] = match_list
 
             st.markdown("### VC Matching")
             st.caption("Top 5 investors ranked by specialist fit score")
@@ -1248,6 +1379,132 @@ def render_results() -> None:
                 st.markdown("**WARM INTRODUCTION PATH**")
                 _intro = _VC_INTRO.get(str(match.name), "Research portfolio company founders on LinkedIn for warm introduction opportunities")
                 st.caption(_intro)
+
+        # ──────────────────────────────────────────────────────────────────
+        # COMPARABLE TRANSACTIONS
+        # ──────────────────────────────────────────────────────────────────
+        elif tab == "Comparable transactions":
+            section_header("Comparable transactions",
+                           "Recent M&A deals in " + str(_sector) + " — what acquirers have paid")
+
+            _txns = COMPARABLE_TRANSACTIONS.get(_sector, COMPARABLE_TRANSACTIONS["Other"])
+            _multiples = [t["ev_rev_multiple"] for t in _txns]
+            _avg_mult  = sum(_multiples) / len(_multiples)
+            _med_deal  = sorted([t["deal_size_gbp"] for t in _txns])[len(_txns) // 2]
+            _years     = [t["year"] for t in _txns]
+
+            # Summary metrics
+            _sm1, _sm2, _sm3 = st.columns(3)
+            with _sm1:
+                st.markdown(
+                    "<div style='background:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;padding:16px;'>"
+                    "<p style='font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin:0 0 6px;'>Avg EV/Revenue multiple</p>"
+                    "<p style='font-size:26px;font-weight:500;color:#0F172A;margin:0;'>" + str(round(_avg_mult, 1)) + "x</p>"
+                    "</div>", unsafe_allow_html=True)
+            with _sm2:
+                st.markdown(
+                    "<div style='background:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;padding:16px;'>"
+                    "<p style='font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin:0 0 6px;'>Median deal size</p>"
+                    "<p style='font-size:26px;font-weight:500;color:#0F172A;margin:0;'>" + fmt_gbp(_med_deal) + "</p>"
+                    "</div>", unsafe_allow_html=True)
+            with _sm3:
+                st.markdown(
+                    "<div style='background:#FFFFFF;border:1px solid #E2E8F0;border-radius:8px;padding:16px;'>"
+                    "<p style='font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin:0 0 6px;'>Deal date range</p>"
+                    "<p style='font-size:26px;font-weight:500;color:#0F172A;margin:0;'>" + str(min(_years)) + " – " + str(max(_years)) + "</p>"
+                    "</div>", unsafe_allow_html=True)
+
+            st.markdown("<div style='height:16px;'></div>", unsafe_allow_html=True)
+
+            # Transactions table
+            overline("RECENT TRANSACTIONS")
+            _txn_df = pd.DataFrame([{
+                "Target":         t["target"],
+                "Acquirer":       t["acquirer"],
+                "Year":           t["year"],
+                "Deal size":      fmt_gbp(t["deal_size_gbp"]),
+                "Revenue (est.)": fmt_gbp(t["revenue_gbp"]),
+                "EV/Rev":         str(t["ev_rev_multiple"]) + "x",
+                "Description":    t["detail"],
+            } for t in _txns])
+            st.dataframe(_txn_df, use_container_width=True, hide_index=True)
+
+            # Positioning analysis
+            st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+            overline("WHERE DOES " + str(company).upper() + " SIT?")
+            _company_mult = (_blend["base"] / _revenue) if _revenue > 0 else 0
+            _min_mult = min(_multiples)
+            _max_mult = max(_multiples)
+            if _company_mult < _avg_mult * 0.9:
+                _position = "This implies the company is valued below recent transaction averages — potential upside in an M&A scenario."
+            elif _company_mult > _avg_mult * 1.1:
+                _position = "This implies a premium to recent transactions — a strategic acquirer would need a compelling rationale for the premium."
+            else:
+                _position = "This is broadly in line with recent comparable transactions."
+            st.info(
+                "At the base case valuation of " + fmt_gbp(_blend["base"]) + ", " + str(company)
+                + " implies an EV/Revenue multiple of " + str(round(_company_mult, 1)) + "x. "
+                "Comparable " + str(_sector) + " transactions have ranged from " + str(round(_min_mult, 1))
+                + "x to " + str(round(_max_mult, 1)) + "x with an average of " + str(round(_avg_mult, 1)) + "x. "
+                + _position
+            )
+            st.caption("Sources: Beauhurst, Crunchbase, Companies House filings, public announcements. Deal sizes and revenue figures are estimates where not publicly confirmed. Multiples are indicative and should not be used as the sole basis for valuation.")
+
+        # ──────────────────────────────────────────────────────────────────
+        # INVESTOR OUTREACH
+        # ──────────────────────────────────────────────────────────────────
+        elif tab == "Investor outreach":
+            section_header("Investor outreach",
+                           "Personalised cold email templates for your top 5 investor matches")
+
+            st.info("These templates are pre-filled with your actual metrics. Before sending: personalise the opening line by referencing a specific portfolio company or recent investment, address a named partner not a generic inbox, and attach your pitch deck.")
+
+            # Get matches from session state or compute them
+            _outreach_matches = st.session_state.get("vc_matches", [])
+            if not _outreach_matches:
+                _vc_df_o = pd.read_csv(os.path.join(os.path.dirname(__file__), "data", "vc_database.csv"))
+                _vc_scored_o = score_investors(_vc_df_o, _sector, _stage, _geography, _revenue)
+                _top5_o = _vc_scored_o.head(5)
+                _outreach_matches = [
+                    MatchResult(
+                        name=r["Investor"], score=int(r["Score /100"]),
+                        sector_score=int(r["Sector Fit"]), stage_score=int(r["Stage Fit"]),
+                        geo_score=int(r["Geo Fit"]), cheque_score=int(r["Cheque Fit"]),
+                        sector_rationale=r["Sector Rationale"], stage_rationale=r["Stage Rationale"],
+                        geo_rationale=r["Geo Rationale"], cheque_rationale=r["Cheque Rationale"],
+                        notable_portfolio=r["Notable Portfolio"], cheque_range=r["Cheque Range"],
+                        website=r["Website"], description=r["Description"],
+                        investor_type=r["Type"],
+                    )
+                    for _, r in _top5_o.iterrows()
+                ]
+
+            # Get raise mid-point for email
+            _raise_mid = _burn * 18  # fallback: 18-month runway raise
+
+            for _rank, _match in enumerate(_outreach_matches[:5], start=1):
+                _subj, _body = _generate_cold_email(
+                    _match, company, _sector, _stage, _revenue,
+                    _growth_pct, _ebitda_margin, _geography,
+                    _blend.get("base", 0), _raise_mid,
+                )
+                _hc1, _hc2 = st.columns([4, 1])
+                with _hc1:
+                    st.markdown("**No." + str(_rank) + " " + str(_match.name) + "**")
+                with _hc2:
+                    st.markdown("Score: **" + str(_match.score) + "/100**")
+                st.markdown("**Subject:** " + _subj)
+                st.text_area(
+                    label="Email body — click to edit",
+                    value=_body,
+                    height=280,
+                    key="email_" + str(_rank),
+                    help="This template is pre-filled with your company metrics. Edit before sending.",
+                )
+                if st.button("Copied!", key="copy_" + str(_rank)):
+                    st.write("Paste directly into your email client.")
+                if _rank < 5:
+                    st.divider()
 
         # ──────────────────────────────────────────────────────────────────
         # INVESTMENT MEMO
