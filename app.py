@@ -6,7 +6,6 @@ import plotly.graph_objects as go
 import os
 
 from modules.valuation import (
-    CompanyInputs,
     dcf_valuation,
     comparable_valuation,
     blended_valuation,
@@ -14,6 +13,7 @@ from modules.valuation import (
 )
 from modules.vc_matching import score_investors
 from types import SimpleNamespace as MatchResult
+from types import SimpleNamespace as _NS
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -566,7 +566,7 @@ def render_results() -> None:
     _tv_label  = st.session_state.get("inp_tv_method", "Gordon Growth Model")
     _tv_method = "exit_multiple" if _tv_label == "Exit Multiple (EV/EBITDA)" else "gordon_growth"
     _exit_mult = float(st.session_state.get("inp_exit_multiple", 12.0)) if _tv_method == "exit_multiple" else None
-    _inputs = CompanyInputs(
+    _inputs = _NS(
         stage=_stage,
         tax_rate_pct=float(st.session_state.get("inp_tax_rate", 25)),
         capex_pct_of_ebitda=float(st.session_state.get("inp_capex_pct", 5)),
@@ -583,6 +583,7 @@ def render_results() -> None:
         beta=float(_beta_val) if _beta_val is not None else None,
         cost_of_debt_pct=float(st.session_state.get("inp_wacc_kd", 8.0)),
         debt_gbp=float(st.session_state.get("inp_wacc_debt", 0)),
+        equity_gbp=None,
     )
     _dcf   = dcf_valuation(_revenue, _growth_pct, _ebitda_margin, _inputs)
     _comps = comparable_valuation(_revenue, _sector)
