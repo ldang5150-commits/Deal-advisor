@@ -248,20 +248,6 @@ st.markdown("""
     border: 1px solid #E2E8F0 !important;
     border-radius: 8px !important;
   }
-  .streamlit-expanderHeader svg {
-    display: inline-block !important;
-  }
-  .streamlit-expanderHeader p::before {
-    content: none !important;
-  }
-  [data-testid="stExpander"] summary p {
-    font-size: 14px;
-    font-weight: 500;
-    color: #1F2937;
-  }
-  button[data-testid="stExpanderToggleIcon"] {
-    display: none;
-  }
 </style>
 """, unsafe_allow_html=True)
 
@@ -462,7 +448,10 @@ def render_home() -> None:
                                    key="inp_burn", step=10_000, format="%d")
 
     # ── Section 4: DCF assumptions ──
-    with st.expander("+ DCF assumptions"):
+    st.markdown("---")
+    show_dcf = st.checkbox("Show DCF assumption overrides", value=False)
+    if show_dcf:
+        st.markdown("**DCF assumptions**")
         _d1, _d2 = st.columns(2)
         with _d1:
             st.number_input("Tax rate (%)", min_value=0, max_value=50,
@@ -496,7 +485,9 @@ def render_home() -> None:
                                 help="Typical exit multiples by sector: SaaS 12-18x, FinTech 10-15x, HealthTech 8-14x, Marketplace 8-12x")
 
     # ── Section 5: WACC ──
-    with st.expander("+ WACC inputs"):
+    show_wacc = st.checkbox("Show WACC inputs", value=False)
+    if show_wacc:
+        st.markdown("**WACC inputs**")
         _use_custom = st.toggle("Enter WACC directly instead of using formula",
                                 key="inp_use_custom_wacc")
         if _use_custom:
