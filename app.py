@@ -811,13 +811,14 @@ def render_results() -> None:
                 text=[f"£{v}m" for v in _proj["EBITDA (£m)"]],
                 textposition="bottom center", textfont=dict(size=11, color="#0F172A"),
             ))
+            _proj_layout = dict(**PLOTLY_BASE)
+            _proj_layout["legend"] = dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0",
+                                          orientation="h", y=-0.15)
             fig_proj.update_layout(
                 title="5-year revenue & EBITDA (£m)",
                 xaxis=dict(**AXIS_CLEAN),
                 yaxis=dict(**AXIS_CLEAN),
-                legend=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0",
-                            orientation="h", y=-0.15),
-                **PLOTLY_BASE,
+                **_proj_layout,
             )
             st.plotly_chart(fig_proj, use_container_width=True)
 
