@@ -583,6 +583,7 @@ def render_results() -> None:
         beta=float(_beta_val) if _beta_val is not None else None,
         cost_of_debt_pct=float(st.session_state.get("inp_wacc_kd", 8.0)),
         debt_gbp=float(st.session_state.get("inp_wacc_debt", 0)),
+        total_debt_gbp=float(st.session_state.get("inp_wacc_debt", 0)),
         equity_gbp=None,
     )
     _dcf   = dcf_valuation(_revenue, _growth_pct, _ebitda_margin, _inputs)
