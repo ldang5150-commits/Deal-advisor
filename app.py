@@ -1050,11 +1050,18 @@ def render_results() -> None:
                                annotation_text="Control threshold", annotation_position="top right")
             fig_dil.add_hline(y=20, line_dash="dash", line_color="#F59E0B",
                                annotation_text="Typical floor", annotation_position="top right")
-            # Mark current stage
+            # Mark current stage with a highlighted point on the line
             _stage_idx = {"Pre-Seed": 0, "Seed": 1, "Series A": 2, "Series B": 3, "Series C+": 4, "Growth": 4}.get(_stage, 0)
             if _stage_idx > 0:
-                fig_dil.add_vline(x=_rounds[_stage_idx], line_dash="dot", line_color="#64748B",
-                                   annotation_text="Current stage", annotation_position="top left")
+                fig_dil.add_trace(go.Scatter(
+                    x=[_rounds[_stage_idx]], y=[_ownership[_stage_idx]],
+                    mode="markers+text",
+                    marker=dict(color="#1D4ED8", size=14, symbol="circle"),
+                    text=["Current stage"],
+                    textposition="top center",
+                    textfont=dict(size=11, color="#64748B"),
+                    showlegend=False,
+                ))
             fig_dil.update_layout(
                 paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
                 height=300, margin=dict(l=0, r=0, t=20, b=0),
