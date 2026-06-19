@@ -187,6 +187,16 @@ def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
 
     sc = dict(tax_rate=tax_rate, capex_pct=capex_pct, nwc_pct=nwc_pct,
               da_pct=da_pct, tv_method=tv_method, exit_multiple=exit_mult)
+
+    # Compute base-case detail for waterfall / sensitivity
+    revs, ebs = _project_revenues_ebitda(revenue, growth_pct, ebitda_margin)
+    eff_wacc = max(wacc, tg + 0.01)
+    fcfs = _project_fcf(revs, ebs, capex_pct, nwc_pct, tax_rate, da_pct)
+    pv_fcfs_list = [f / (1 + eff_wacc) ** (i + 1) for i, f in enumerate(fcfs)]
+    pv_fcfs_sum = sum(pv_fcfs_list)
+    terminal_value_pv = _terminal_value(fcfs, ebs[-1], eff_wacc, tg, tv_method, exit_mult)
+    nopat_y1 = ebs[0] * (1 - tax_rate)
+
     return {
         "low":        _dcf_scenario(revenue, growth_pct, ebitda_margin,
                                     wacc + 0.05, tg - 0.005, scenario_adj=-0.05, **sc),
@@ -199,6 +209,15 @@ def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
         "tv_method":   tv_method,
         "terminal_growth_pct": (inputs.terminal_growth_rate_pct or 3.0),
         "exit_multiple_ebitda": exit_mult,
+        "dcf_detail": {
+            "pv_fcfs_sum":      pv_fcfs_sum,
+            "terminal_value_pv": terminal_value_pv,
+            "fcfs":             fcfs,
+            "pv_fcfs_list":     pv_fcfs_list,
+            "nopat_y1":         nopat_y1,
+            "ebitda_y1":        ebs[0],
+            "revenue_y1":       revs[0],
+        },
     }
 
 

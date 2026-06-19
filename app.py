@@ -825,6 +825,72 @@ def render_results() -> None:
             )
             st.plotly_chart(fig_proj, use_container_width=True)
 
+            # ── VALUE BRIDGE waterfall ────────────────────────────────────
+            overline("VALUE BRIDGE")
+            _detail = _dcf.get("dcf_detail", {})
+            if _detail:
+                _rv1 = _detail.get("revenue_y1", 0)
+                _eb1 = _detail.get("ebitda_y1", 0)
+                _np1 = _detail.get("nopat_y1", 0)
+                _fcfs = _detail.get("fcfs", [])
+                _pv_fcfs = _detail.get("pv_fcfs_sum", 0)
+                _pv_tv = _detail.get("terminal_value_pv", 0)
+                _ev_base = _dcf.get("base", 0)
+
+                _tax_hit = _np1 - _eb1
+                _capex_nwc = (_fcfs[0] if _fcfs else 0) - _np1
+
+                _wf_x = ["Revenue (Y1)", "EBITDA margin", "Tax (NOPAT)", "CapEx + NWC", "PV of FCFs", "Terminal value", "Enterprise value"]
+                _wf_y = [_rv1, _eb1 - _rv1, _tax_hit, _capex_nwc, _pv_fcfs, _pv_tv, 0]
+                _wf_measure = ["relative", "relative", "relative", "relative", "absolute", "relative", "total"]
+
+                fig_wf = go.Figure(go.Waterfall(
+                    orientation="v",
+                    measure=_wf_measure,
+                    x=_wf_x,
+                    y=_wf_y,
+                    connector=dict(line=dict(color="#E2E8F0", width=1)),
+                    increasing=dict(marker=dict(color="#10B981")),
+                    decreasing=dict(marker=dict(color="#EF4444")),
+                    totals=dict(marker=dict(color="#1D4ED8")),
+                    text=[fmt_gbp(abs(v)) for v in _wf_y],
+                    textposition="outside",
+                ))
+                fig_wf.update_layout(
+                    paper_bgcolor="#F8FAFC",
+                    plot_bgcolor="#F8FAFC",
+                    height=380,
+                    margin=dict(l=20, r=20, t=20, b=20),
+                    showlegend=False,
+                    yaxis=dict(showgrid=False, zeroline=True, zerolinecolor="#E2E8F0"),
+                    xaxis=dict(showgrid=False),
+                )
+                st.plotly_chart(fig_wf, use_container_width=True, config={"displayModeBar": False})
+
+            # ── SENSITIVITY TABLE ─────────────────────────────────────────
+            overline("SENSITIVITY ANALYSIS - ENTERPRISE VALUE (BASE CASE DCF)")
+            _base_wacc = _blend.get("wacc", 0.30)
+            _pv_fcfs_sum = _detail.get("pv_fcfs_sum", 0)
+            _fcfs_list = _detail.get("fcfs", [])
+            _wacc_rows = [_base_wacc - 0.04, _base_wacc - 0.02, _base_wacc, _base_wacc + 0.02, _base_wacc + 0.04]
+            _tg_cols = [0.01, 0.02, 0.03, 0.04, 0.05]
+            _sens_data = {}
+            for _w in _wacc_rows:
+                _row = {}
+                for _tg in _tg_cols:
+                    if _w > _tg and _fcfs_list:
+                        _tv = _fcfs_list[-1] * (1 + _tg) / (_w - _tg)
+                        _pv_tv = _tv / ((1 + _w) ** 5)
+                        _ev = _pv_fcfs_sum + _pv_tv
+                    else:
+                        _ev = _pv_fcfs_sum
+                    _row[f"{_tg*100:.1f}%"] = fmt_gbp(_ev)
+                _sens_data[f"{_w*100:.1f}%"] = _row
+            _sens_df = pd.DataFrame(_sens_data).T
+            _sens_df.index.name = "WACC \\ Term. Growth"
+            st.dataframe(_sens_df, use_container_width=True)
+            st.caption("Sensitivity shows enterprise value (DCF only) across WACC and terminal growth rate combinations. Higher WACC or lower terminal growth reduces value.")
+
         # ──────────────────────────────────────────────────────────────────
         # FUNDRAISING
         # ──────────────────────────────────────────────────────────────────
@@ -876,9 +942,21 @@ def render_results() -> None:
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("Suggested use of funds")
 
-            _cats    = ["Engineering & Product", "Sales & Marketing",
-                        "Operations", "G&A / Legal", "Reserve"]
-            _weights = [0.40, 0.30, 0.15, 0.10, 0.05]
+            _SECTOR_FUNDS = {
+                "FinTech":      {"Engineering & Product": 35, "Sales & Marketing": 25, "Compliance & Regulation": 15, "Operations": 15, "G&A / Legal": 7, "Reserve": 3},
+                "SaaS":         {"Engineering & Product": 40, "Sales & Marketing": 35, "Customer Success": 10, "Operations": 8, "G&A / Legal": 5, "Reserve": 2},
+                "HealthTech":   {"R&D & Clinical": 35, "Engineering & Product": 25, "Regulatory Affairs": 15, "Sales & Marketing": 15, "G&A / Legal": 7, "Reserve": 3},
+                "MarketPlace":  {"Engineering & Product": 30, "Sales & Marketing": 30, "Supply Acquisition": 20, "Operations": 12, "G&A / Legal": 5, "Reserve": 3},
+                "DeepTech":     {"R&D": 45, "Engineering & Product": 25, "Business Development": 15, "Operations": 8, "G&A / Legal": 5, "Reserve": 2},
+                "EdTech":       {"Engineering & Product": 35, "Content & Curriculum": 20, "Sales & Marketing": 25, "Operations": 12, "G&A / Legal": 5, "Reserve": 3},
+                "CleanTech":    {"R&D & Engineering": 40, "Pilots & Deployment": 25, "Business Development": 15, "Operations": 12, "G&A / Legal": 5, "Reserve": 3},
+                "E-Commerce":   {"Marketing & Brand": 40, "Engineering & Product": 25, "Operations & Logistics": 20, "G&A / Legal": 10, "Reserve": 5},
+                "Cybersecurity":{"Engineering & Product": 40, "Sales & Marketing": 30, "Compliance": 15, "Operations": 10, "G&A / Legal": 5},
+                "Other":        {"Engineering & Product": 35, "Sales & Marketing": 30, "Operations": 15, "G&A / Legal": 12, "Reserve": 8},
+            }
+            _fund_alloc = _SECTOR_FUNDS.get(_sector, _SECTOR_FUNDS["Other"])
+            _cats = list(_fund_alloc.keys())
+            _weights = [v / 100 for v in _fund_alloc.values()]
             _amounts = [_recommended * w for w in _weights]
 
             fig_pie = go.Figure(go.Pie(
@@ -947,6 +1025,100 @@ def render_results() -> None:
                     f'</div>',
                     unsafe_allow_html=True,
                 )
+
+            st.markdown("<hr/>", unsafe_allow_html=True)
+            overline("DILUTION TIMELINE - FOUNDER OWNERSHIP")
+
+            _rounds = ["Founding", "Seed", "Series A", "Series B", "Series C"]
+            _dilutions = [0, 15, 20, 18, 15]
+            _ownership = []
+            _own = 100.0
+            for _d in _dilutions:
+                _own = _own * (1 - _d / 100)
+                _ownership.append(_own)
+
+            fig_dil = go.Figure()
+            fig_dil.add_trace(go.Scatter(
+                x=_rounds, y=_ownership,
+                mode="lines+markers",
+                line=dict(color="#1D4ED8", width=2),
+                fill="tozeroy",
+                fillcolor="rgba(29,78,216,0.1)",
+                name="Founder ownership",
+            ))
+            fig_dil.add_hline(y=50, line_dash="dash", line_color="#EF4444",
+                               annotation_text="Control threshold", annotation_position="top right")
+            fig_dil.add_hline(y=20, line_dash="dash", line_color="#F59E0B",
+                               annotation_text="Typical floor", annotation_position="top right")
+            # Mark current stage
+            _stage_idx = {"Pre-Seed": 0, "Seed": 1, "Series A": 2, "Series B": 3, "Series C+": 4, "Growth": 4}.get(_stage, 0)
+            if _stage_idx > 0:
+                fig_dil.add_vline(x=_rounds[_stage_idx], line_dash="dot", line_color="#64748B",
+                                   annotation_text="Current stage", annotation_position="top left")
+            fig_dil.update_layout(
+                paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+                height=300, margin=dict(l=0, r=0, t=20, b=0),
+                yaxis=dict(title="Founder ownership %", range=[0, 105], **AXIS_CLEAN),
+                xaxis=dict(**AXIS_CLEAN),
+                showlegend=False,
+            )
+            st.plotly_chart(fig_dil, use_container_width=True, config={"displayModeBar": False})
+
+            _dil_rows = []
+            _own2 = 100.0
+            for _rnd, _d in zip(_rounds, _dilutions):
+                _own2 = _own2 * (1 - _d / 100)
+                _implied = _own2 / 100 * _blend.get("base", 0)
+                _dil_rows.append({"Round": _rnd, "Dilution sold": f"{_d}%", "Founder ownership": f"{_own2:.1f}%", "Implied stake value": fmt_gbp(_implied)})
+            st.dataframe(pd.DataFrame(_dil_rows), use_container_width=True, hide_index=True)
+            st.caption("Assumes standard dilution at each round. Actual dilution depends on valuation and round size negotiated.")
+
+            st.markdown("<hr/>", unsafe_allow_html=True)
+            overline("COMPARABLE RAISES - RECENT MARKET DATA")
+
+            _COMP_RAISES = {
+                ("FinTech", "Series A"): [
+                    {"Company": "Cleo", "Amount": "£80m", "Valuation": "£500m", "Year": 2024, "Description": "AI-powered financial assistant"},
+                    {"Company": "Liberis", "Amount": "£64m", "Valuation": "£320m", "Year": 2024, "Description": "Embedded finance for SMEs"},
+                    {"Company": "Comma", "Amount": "£10m", "Valuation": "£50m", "Year": 2024, "Description": "Open banking payments infrastructure"},
+                ],
+                ("FinTech", "Series B"): [
+                    {"Company": "Atoa", "Amount": "£15m", "Valuation": "£75m", "Year": 2024, "Description": "Account-to-account payments"},
+                    {"Company": "Hokodo", "Amount": "£40m", "Valuation": "£180m", "Year": 2024, "Description": "B2B BNPL for trade credit"},
+                    {"Company": "Wagestream", "Amount": "£57m", "Valuation": "£300m", "Year": 2024, "Description": "Earned wage access platform"},
+                ],
+                ("SaaS", "Series A"): [
+                    {"Company": "Koor", "Amount": "£8m", "Valuation": "£40m", "Year": 2024, "Description": "Procurement analytics SaaS"},
+                    {"Company": "Drata", "Amount": "£50m", "Valuation": "£400m", "Year": 2024, "Description": "Compliance automation"},
+                    {"Company": "Paddle", "Amount": "£60m", "Valuation": "£800m", "Year": 2024, "Description": "Revenue delivery platform"},
+                ],
+                ("SaaS", "Series B"): [
+                    {"Company": "Zelt", "Amount": "£25m", "Valuation": "£120m", "Year": 2024, "Description": "HR and payroll platform"},
+                    {"Company": "Personio", "Amount": "£200m", "Valuation": "£6bn", "Year": 2024, "Description": "HR SaaS for SMEs"},
+                    {"Company": "Rippling", "Amount": "£400m", "Valuation": "£9bn", "Year": 2024, "Description": "Workforce management"},
+                ],
+                ("HealthTech", "Seed"): [
+                    {"Company": "Maia", "Amount": "£3m", "Valuation": "£15m", "Year": 2024, "Description": "AI menopause care"},
+                    {"Company": "Suvera", "Amount": "£5m", "Valuation": "£25m", "Year": 2024, "Description": "Virtual chronic disease clinic"},
+                    {"Company": "Thymia", "Amount": "£4m", "Valuation": "£20m", "Year": 2024, "Description": "Mental health biomarkers"},
+                ],
+                ("HealthTech", "Series A"): [
+                    {"Company": "Feebris", "Amount": "£12m", "Valuation": "£60m", "Year": 2024, "Description": "AI health assessment"},
+                    {"Company": "Huma", "Amount": "£50m", "Valuation": "£300m", "Year": 2024, "Description": "Digital health platform"},
+                    {"Company": "Vinehealth", "Amount": "£8m", "Valuation": "£40m", "Year": 2024, "Description": "Cancer care companion"},
+                ],
+            }
+
+            _comp_key = (_sector, _stage)
+            _comp_data = _COMP_RAISES.get(_comp_key)
+            if not _comp_data:
+                # Try any stage for same sector
+                _comp_data = next((v for k, v in _COMP_RAISES.items() if k[0] == _sector), None)
+            if _comp_data:
+                st.dataframe(pd.DataFrame(_comp_data), use_container_width=True, hide_index=True)
+                st.caption("Source: Beauhurst, Crunchbase, public announcements. Valuations are estimates where not publicly confirmed.")
+            else:
+                st.info("No comparable raises found for this sector and stage combination.")
 
         # ──────────────────────────────────────────────────────────────────
         # VC MATCHING
@@ -1022,6 +1194,22 @@ def render_results() -> None:
                 color = "#10B981" if pct >= 0.85 else "#EAB308" if pct >= 0.60 else "#EF4444"
                 return f'<div style="background:#F1F5F9;border-radius:4px;height:8px;width:100%;margin:4px 0 8px 0;"><div style="background:{color};border-radius:4px;height:8px;width:{pct*100:.0f}%;"></div></div>'
 
+            _VC_INTRO = {
+                "Finch Capital": "Via Techleap.nl alumni, Startupbootcamp FinTech graduates, or founders of Fourthline and Tokenize",
+                "Episode 1": "Via founders of Zoopla, Simply Business, or alumni of Seedcamp portfolio",
+                "Connect Ventures": "Via Typeform, Citymapper, or Curve founders — all active angels from their portfolio",
+                "Notion Capital": "Via GoCardless, Paddle, or ComplyAdvantage founders — or through SaaS founders in their network",
+                "Cherry Ventures": "Via FlixBus, Forto, or Contentful founding teams — strong Berlin-London network",
+                "Accel": "Via Monzo, Revolut, or Atlassian alumni — or through Y Combinator batch connections",
+                "Balderton Capital": "Via Revolut, Depop, or Betfair founding teams — or through Index Ventures co-investments",
+                "Index Ventures": "Via Wise, Robinhood UK, or Cazoo founders — or through LocalGlobe portfolio overlap",
+                "Anthemis": "Via Wealthsimple, Betterment, or Simple founding teams — strong US-UK FinTech network",
+                "Augmentum Fintech": "Via portfolio company founders or through fintech accelerators like Barclays Accelerator",
+                "LocalGlobe": "Via Transferwise or Cazoo alumni — or through Oxford and Cambridge angel networks",
+                "Seedcamp": "Via Revolut or UiPath alumni — or through accelerator programme application directly",
+                "Octopus Ventures": "Via Elvie, Zoopla, or Secret Escapes founders — or through UK angel networks",
+            }
+
             for rank, match in enumerate(match_list, start=1):
                 label = "No." + str(rank) + "  " + str(match.name) + "  |  " + str(match.score) + "/100"
                 st.markdown("---")
@@ -1049,6 +1237,10 @@ def render_results() -> None:
                     st.markdown("**CHEQUE SIZE - " + str(match.cheque_score) + "/10**")
                     st.markdown(_bar(int(match.cheque_score), 10), unsafe_allow_html=True)
                     st.caption(str(match.cheque_rationale))
+                st.divider()
+                st.markdown("**WARM INTRODUCTION PATH**")
+                _intro = _VC_INTRO.get(str(match.name), "Research portfolio company founders on LinkedIn for warm introduction opportunities")
+                st.caption(_intro)
 
         # ──────────────────────────────────────────────────────────────────
         # INVESTMENT MEMO

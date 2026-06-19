@@ -49,15 +49,26 @@ def _sector_score(investor_sectors: str, company_sector: str,
     if cs in sectors:
         n = max(1, int(sector_count) if not pd.isna(sector_count) else len(sectors))
         if n == 1:
-            return 35, "Primary sector specialist"
+            s_score, s_rat = 35, "Primary sector specialist"
         elif n == 2:
-            return 30, f"Dual-sector focus includes {company_sector}"
+            s_score, s_rat = 30, f"Dual-sector focus includes {company_sector}"
         elif n == 3:
-            return 24, f"One of {n} sectors covered — some specialisation"
+            s_score, s_rat = 24, f"One of {n} sectors covered — some specialisation"
         elif n == 4:
-            return 18, f"One of {n} sectors covered — generalist fund"
+            s_score, s_rat = 18, f"One of {n} sectors covered — generalist fund"
         else:
-            return 12, f"One of {n} sectors covered — broad generalist fund"
+            s_score, s_rat = 12, f"One of {n} sectors covered — broad generalist fund"
+
+        # Position penalty: sector listed later in investor's sector list gets reduced score
+        sectors_list = [s.strip().lower() for s in str(investor_sectors).split(",")]
+        if cs in sectors_list:
+            pos = sectors_list.index(cs)
+            if pos == 1:
+                s_score = int(s_score * 0.85)
+            elif pos >= 2:
+                s_score = int(s_score * 0.70)
+
+        return s_score, s_rat
 
     for adj in ADJACENCY.get(cs, []):
         if adj in sectors:
@@ -173,6 +184,9 @@ def score_investors(df: pd.DataFrame, sector: str, stage: str,
         c_score, penalty, c_rat = _cheque_score(min_c, max_c, estimated_raise)
 
         raw_total = s_score + st_score + g_score + c_score - penalty
+        cheque_range = max_c - min_c
+        if cheque_range > 50_000_000:
+            raw_total -= 5
         total = max(0, min(100, raw_total))
 
         cheque_range = (
