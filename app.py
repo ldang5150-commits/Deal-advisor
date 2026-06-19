@@ -756,7 +756,10 @@ def render_results() -> None:
             overline("5-year revenue projection")
 
             _target_margin = float(st.session_state.get("inp_target_margin", _ebitda_margin))
-            _proj = five_year_projection(_revenue, _growth_pct, _ebitda_margin, _target_margin)
+            try:
+                _proj = five_year_projection(_revenue, _growth_pct, _ebitda_margin, _target_margin)
+            except TypeError:
+                _proj = five_year_projection(_revenue, _growth_pct, _ebitda_margin)
 
             # Styled HTML table
             _trows = ""
