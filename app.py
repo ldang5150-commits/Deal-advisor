@@ -747,32 +747,6 @@ def render_home() -> None:
         st.number_input("Terminal growth rate (%)", min_value=0.0, max_value=8.0, step=0.5,
                         key="inp_terminal_growth",
                         help="Long-run growth rate beyond projection. Typically 2-4% for developed markets.")
-        from modules.valuation import SECTOR_MULTIPLES as _SM_UI
-        _ev_sector = st.session_state.get("sector_select", "FinTech")
-        _ev_sector_default = float(_SM_UI.get(_ev_sector, _SM_UI["Other"])["base"])
-        if "inp_ev_rev_multiple" not in st.session_state:
-            st.session_state["inp_ev_rev_multiple"] = _ev_sector_default
-        st.markdown("**EV/Revenue multiple (comparable companies)**")
-        _ev_rev_val = st.number_input(
-            "Base EV/Revenue multiple",
-            min_value=0.1, max_value=50.0, step=0.5,
-            key="inp_ev_rev_multiple",
-            help="Default reflects sector average. Override for premium businesses (e.g. high-growth AI: 15-25x) or discounted (e.g. legacy retail: 0.5x).",
-        )
-        if abs(_ev_rev_val - _ev_sector_default) > 0.01:
-            st.markdown(
-                "<span style='font-size:11px; color:#92400E; background:#FEF3C7; padding:3px 8px; "
-                "border-radius:4px;'>Override active: " + str(_ev_rev_val) + "x vs sector default of "
-                + str(_ev_sector_default) + "x</span>",
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                "<span style='font-size:11px; color:#64748B; background:#F1F5F9; padding:3px 8px; "
-                "border-radius:4px;'>Using " + _ev_sector + " sector default ("
-                + str(_ev_sector_default) + "x)</span>",
-                unsafe_allow_html=True,
-            )
         _projection_years = st.selectbox(
             "Projection horizon (years)",
             options=[3, 5, 7],
@@ -790,6 +764,37 @@ def render_home() -> None:
             st.number_input("Exit EV/EBITDA multiple", min_value=1.0, max_value=40.0,
                             value=12.0, key="inp_exit_multiple", step=0.5,
                             help="Typical exit multiples by sector: SaaS 12-18x, FinTech 10-15x, HealthTech 8-14x, Marketplace 8-12x")
+
+    # ── Section 4b: Comparable company assumptions ──
+    st.markdown("---")
+    st.markdown("**Comparable company assumptions**")
+    st.caption("Used for the comparables side of the blended valuation. Independent of the DCF model above.")
+    from modules.valuation import SECTOR_MULTIPLES as _SM_UI
+    _ev_sector = st.session_state.get("sector_select", "FinTech")
+    _ev_sector_default = float(_SM_UI.get(_ev_sector, _SM_UI["Other"])["base"])
+    if "inp_ev_rev_multiple" not in st.session_state:
+        st.session_state["inp_ev_rev_multiple"] = _ev_sector_default
+    st.markdown("**EV/Revenue multiple (comparable companies)**")
+    _ev_rev_val = st.number_input(
+        "Base EV/Revenue multiple",
+        min_value=0.1, max_value=50.0, step=0.5,
+        key="inp_ev_rev_multiple",
+        help="Default reflects sector average. Override for premium businesses (e.g. high-growth AI: 15-25x) or discounted (e.g. legacy retail: 0.5x).",
+    )
+    if abs(_ev_rev_val - _ev_sector_default) > 0.01:
+        st.markdown(
+            "<span style='font-size:11px; color:#92400E; background:#FEF3C7; padding:3px 8px; "
+            "border-radius:4px;'>Override active: " + str(_ev_rev_val) + "x vs sector default of "
+            + str(_ev_sector_default) + "x</span>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            "<span style='font-size:11px; color:#64748B; background:#F1F5F9; padding:3px 8px; "
+            "border-radius:4px;'>Using " + _ev_sector + " sector default ("
+            + str(_ev_sector_default) + "x)</span>",
+            unsafe_allow_html=True,
+        )
 
     # ── Section 5: WACC ──
     st.markdown("---")
