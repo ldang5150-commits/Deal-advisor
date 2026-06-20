@@ -668,10 +668,8 @@ def render_home() -> None:
 
     # ── Page heading ──
     st.markdown(
-        "<h1 style='font-size:28px;font-weight:500;color:#0F172A;margin:0 0 6px;'>"
-        "Enter company details</h1>"
-        "<p style='font-size:14px;color:#64748B;margin:0 0 16px;'>"
-        "Provide financial and contextual information to generate your analysis</p>",
+        "<h1 style='font-size:28px;font-weight:500;color:#0F172A;margin:0 0 16px;'>"
+        "Enter company details</h1>",
         unsafe_allow_html=True,
     )
     st.info(
@@ -786,7 +784,13 @@ def render_home() -> None:
             _current_sector = st.session_state.get("sector_select", "Other")
             if _beta_source == "Use sector average (recommended)":
                 _beta_val_display = SECTOR_BETAS.get(_current_sector, 1.20)
-                st.caption("Using sector beta of " + str(_beta_val_display) + " for " + _current_sector + " (Damodaran 2025)")
+                st.markdown(
+                    "<span style='font-size:12px; color:#64748B; background:#F1F5F9; "
+                    "padding:3px 8px; border-radius:4px;'>Beta: "
+                    + str(_beta_val_display) + " (" + str(st.session_state.get("sector_select", "sector")) + " average, Damodaran 2026)"
+                    + "</span>",
+                    unsafe_allow_html=True,
+                )
             else:
                 st.caption("Stage-based required return will be used instead of WACC formula")
         with _w2:
@@ -795,11 +799,6 @@ def render_home() -> None:
                             help="Interest rate on company debt")
             st.number_input("Total debt (£)", min_value=0,
                             value=0, key="inp_wacc_debt", step=50_000, format="%d")
-        st.info(
-            "WACC = (E/V x Ke) + (D/V x Kd x (1-t))\n"
-            "Ke = Risk-free rate + Beta x Equity risk premium\n"
-            "If beta source is left blank, stage-based required return is used instead."
-        )
 
     st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
