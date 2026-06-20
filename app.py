@@ -563,21 +563,23 @@ def _nav_btn(label: str, is_active: bool, key: str) -> bool:
 # ── Preset callbacks ──────────────────────────────────────────────────────────
 def _load_preset(name: str) -> None:
     presets = {
-        "FinTechX":  dict(inp_company="FinTechX",  inp_sector="FinTech",
+        "FinTechX":  dict(inp_company="FinTechX",  sector_select="FinTech",
                           inp_stage="Series A", inp_geo="UK",
                           inp_revenue=4_000_000,  inp_growth=80,  inp_ebitda=15,
                           inp_cash=1_500_000, inp_burn=200_000),
-        "CloudBase": dict(inp_company="CloudBase", inp_sector="Pure SaaS / Subscription Software",
+        "CloudBase": dict(inp_company="CloudBase", sector_select="Pure SaaS / Subscription Software",
                           inp_stage="Series B", inp_geo="UK",
                           inp_revenue=12_000_000, inp_growth=55,  inp_ebitda=8,
                           inp_cash=3_000_000, inp_burn=400_000),
-        "HealthOS":  dict(inp_company="HealthOS",  inp_sector="HealthTech / Digital Health",
+        "HealthOS":  dict(inp_company="HealthOS",  sector_select="HealthTech / Digital Health",
                           inp_stage="Seed",     inp_geo="UK",
                           inp_revenue=800_000,   inp_growth=120, inp_ebitda=-30,
                           inp_cash=600_000, inp_burn=80_000),
     }
     for k, v in presets[name].items():
         st.session_state[k] = v
+    # Keep inp_sector in sync with sector_select
+    st.session_state["inp_sector"] = st.session_state.get("sector_select", "FinTech")
 
 
 # ── Top nav bar ───────────────────────────────────────────────────────────────
@@ -615,8 +617,37 @@ def render_topnav(company: str = "") -> None:
 # ══════════════════════════════════════════════════════════════════════════════
 # HOME PAGE
 # ══════════════════════════════════════════════════════════════════════════════
+def _on_sector_change():
+    new_sector = st.session_state["sector_select"]
+    d = SECTOR_DEFAULTS.get(new_sector, SECTOR_DEFAULTS["Other"])
+    st.session_state["inp_revenue"]       = d["revenue"]
+    st.session_state["inp_growth"]        = d["growth"]
+    st.session_state["inp_ebitda"]        = d["ebitda"]
+    st.session_state["inp_tax"]           = d["tax"]
+    st.session_state["inp_capex"]         = d["capex"]
+    st.session_state["inp_target_margin"] = d["target_margin"]
+    st.session_state["inp_terminal_growth"] = d["terminal_growth"]
+    st.session_state["inp_rfr"]           = d["rfr"]
+    st.session_state["inp_erp"]           = d["erp"]
+
+
 def render_home() -> None:
     render_topnav()
+
+    # ── Initialise session state defaults on first load ──
+    if "sector_select" not in st.session_state:
+        st.session_state["sector_select"] = "FinTech"
+    if "inp_revenue" not in st.session_state:
+        _d0 = SECTOR_DEFAULTS.get(st.session_state["sector_select"], SECTOR_DEFAULTS["Other"])
+        st.session_state["inp_revenue"]         = _d0["revenue"]
+        st.session_state["inp_growth"]          = _d0["growth"]
+        st.session_state["inp_ebitda"]          = _d0["ebitda"]
+        st.session_state["inp_tax"]             = _d0["tax"]
+        st.session_state["inp_capex"]           = _d0["capex"]
+        st.session_state["inp_target_margin"]   = _d0["target_margin"]
+        st.session_state["inp_terminal_growth"] = _d0["terminal_growth"]
+        st.session_state["inp_rfr"]             = _d0["rfr"]
+        st.session_state["inp_erp"]             = _d0["erp"]
 
     # ── Demo quick-load ──
     st.markdown(
@@ -636,23 +667,18 @@ def render_home() -> None:
     st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
     # ── Page heading ──
-    _htitle, _hinfo = st.columns([10, 1])
-    with _htitle:
-        st.markdown(
-            "<h1 style='font-size:28px;font-weight:500;color:#0F172A;margin:0 0 6px;'>"
-            "Enter company details</h1>"
-            "<p style='font-size:14px;color:#64748B;margin:0 0 24px;'>"
-            "Provide financial and contextual information to generate your analysis</p>",
-            unsafe_allow_html=True,
-        )
-    with _hinfo:
-        st.markdown(
-            "<span title='These are sector-average defaults based on Damodaran 2026 benchmarks. "
-            "Enter your actual company figures for accurate analysis. "
-            "Default values reflect a typical company in your selected sector, not your specific business.' "
-            "style='font-size:20px;cursor:help;color:#94A3B8;'>&#9432;</span>",
-            unsafe_allow_html=True,
-        )
+    st.markdown(
+        "<h1 style='font-size:28px;font-weight:500;color:#0F172A;margin:0 0 6px;'>"
+        "Enter company details</h1>"
+        "<p style='font-size:14px;color:#64748B;margin:0 0 16px;'>"
+        "Provide financial and contextual information to generate your analysis</p>",
+        unsafe_allow_html=True,
+    )
+    st.info(
+        "Defaults shown are sector-average benchmarks based on Damodaran January 2026 data. "
+        "They represent a typical company in your selected sector — not your specific business. "
+        "Enter your actual figures for accurate analysis."
+    )
 
     # ── Three input cards ──
     card1, card2, card3 = st.columns(3)
@@ -661,27 +687,30 @@ def render_home() -> None:
         with st.container(border=True):
             overline("Company profile")
             company_name = st.text_input("Name", key="inp_company")
-            sector = st.selectbox("Sector", options=_ALL_SECTORS, key="inp_sector")
+            sector = st.selectbox(
+                "Sector",
+                options=list(SECTOR_DEFAULTS.keys()),
+                key="sector_select",
+                on_change=_on_sector_change,
+            )
+            # Keep inp_sector in sync so the rest of the app can read it
+            st.session_state["inp_sector"] = sector
             stage = st.selectbox("Stage",
                 ["Pre-Seed", "Seed", "Series A", "Series B", "Series C+", "Growth"],
                 key="inp_stage",
             )
-            _sd = SECTOR_DEFAULTS.get(sector, SECTOR_DEFAULTS["Other"])
-            st.caption(_sd["typical_arr"] + " · " + _sd["burn_note"])
+            _cur_sd = SECTOR_DEFAULTS.get(st.session_state.get("sector_select", "FinTech"), SECTOR_DEFAULTS["Other"])
+            st.caption(_cur_sd["typical_arr"] + " · " + _cur_sd["burn_note"])
 
     with card2:
         with st.container(border=True):
             overline("Financials")
-            _sd = SECTOR_DEFAULTS.get(st.session_state.get("inp_sector", "FinTech"), SECTOR_DEFAULTS["Other"])
-            revenue = st.number_input("Annual revenue (£)", min_value=0,
-                                      value=st.session_state.get("inp_revenue", _sd["revenue"]),
-                                      key="inp_revenue", step=100_000, format="%d")
-            growth_pct = st.number_input("Revenue growth (%)", min_value=-100,
-                                         value=st.session_state.get("inp_growth", _sd["growth"]),
-                                         key="inp_growth", step=5)
-            ebitda_margin = st.number_input("EBITDA margin (%)", min_value=-100,
-                                            value=st.session_state.get("inp_ebitda", _sd["ebitda"]),
-                                            key="inp_ebitda", step=1)
+            revenue = st.number_input(
+                "Annual revenue (£)", min_value=0, step=100_000, format="%d", key="inp_revenue")
+            growth_pct = st.number_input(
+                "Revenue growth (%)", min_value=-100, max_value=500, step=1, key="inp_growth")
+            ebitda_margin = st.number_input(
+                "EBITDA margin (%)", min_value=-200, max_value=100, step=1, key="inp_ebitda")
 
     with card3:
         with st.container(border=True):
@@ -696,28 +725,21 @@ def render_home() -> None:
                                    key="inp_burn", step=10_000, format="%d")
 
     # ── Section 4: DCF assumptions ──
-    _sd_dcf = SECTOR_DEFAULTS.get(st.session_state.get("inp_sector", "FinTech"), SECTOR_DEFAULTS["Other"])
     st.markdown("---")
     st.markdown("**DCF assumptions**")
     st.caption("Defaults are calibrated for UK venture-stage companies. Adjust only if you have company-specific data.")
     _d1, _d2 = st.columns(2)
     with _d1:
-        st.number_input("Tax rate (%)", min_value=0, max_value=50,
-                        value=st.session_state.get("inp_tax_rate", _sd_dcf["tax"]),
-                        key="inp_tax_rate", step=1,
-                        help="UK corporation tax is 25%")
-        st.number_input("CapEx (% of EBITDA)", min_value=0, max_value=30,
-                        value=st.session_state.get("inp_capex_pct", _sd_dcf["capex"]),
-                        key="inp_capex_pct", step=1,
-                        help="Asset-light SaaS: 2-5%. Asset-heavy: 10-20%")
+        st.number_input("Tax rate (%)", min_value=0, max_value=50, step=1,
+                        key="inp_tax", help="UK corporation tax is 25%")
+        st.number_input("CapEx (% of EBITDA)", min_value=0, max_value=50, step=1,
+                        key="inp_capex", help="Asset-light SaaS: 2-5%. Asset-heavy: 10-20%")
     with _d2:
-        st.number_input("Target EBITDA margin Year 5 (%)", min_value=-50, max_value=80,
-                        value=st.session_state.get("inp_target_margin", _sd_dcf["target_margin"]),
-                        key="inp_target_margin", step=1,
+        st.number_input("Target EBITDA margin Year 5 (%)", min_value=-50, max_value=80, step=1,
+                        key="inp_target_margin",
                         help="Expected mature margin at end of projection period")
-        st.number_input("Terminal growth rate (%)", min_value=0.0, max_value=8.0,
-                        value=st.session_state.get("inp_terminal_g", _sd_dcf["terminal_growth"]),
-                        key="inp_terminal_g", step=0.5,
+        st.number_input("Terminal growth rate (%)", min_value=0.0, max_value=8.0, step=0.5,
+                        key="inp_terminal_growth",
                         help="Long-run growth rate beyond projection. Typically 2-4% for developed markets.")
         _projection_years = st.selectbox(
             "Projection horizon (years)",
@@ -751,26 +773,21 @@ def render_home() -> None:
     else:
         _w1, _w2 = st.columns(2)
         with _w1:
-            st.number_input("Risk-free rate (%)", min_value=0.0, max_value=15.0,
-                            value=st.session_state.get("inp_rfr", 4.2),
-                            key="inp_rfr", step=0.1,
-                            help="UK 10-year gilt yield. Currently ~4.2% (June 2026)")
-            st.number_input("Equity risk premium (%)", min_value=0.0, max_value=15.0,
-                            value=st.session_state.get("inp_erp", 5.5),
-                            key="inp_erp", step=0.1,
-                            help="Damodaran UK ERP estimate. Typically 4.5-6.5%")
+            st.number_input("Risk-free rate (%)", min_value=0.0, max_value=15.0, step=0.1,
+                            key="inp_rfr", help="UK 10-year gilt yield. Currently ~4.2% (June 2026)")
+            st.number_input("Equity risk premium (%)", min_value=0.0, max_value=15.0, step=0.1,
+                            key="inp_erp", help="Damodaran UK ERP estimate. Typically 4.5-6.5%")
             _beta_source = st.selectbox(
                 "Beta source",
                 options=["Use sector average (recommended)", "Leave blank (use stage-based rate)"],
                 key="inp_beta_source",
                 help="Sector betas sourced from Damodaran January 2025 dataset (unlevered)",
             )
-            _current_sector = st.session_state.get("inp_sector", "Other")
+            _current_sector = st.session_state.get("sector_select", "Other")
             if _beta_source == "Use sector average (recommended)":
                 _beta_val_display = SECTOR_BETAS.get(_current_sector, 1.20)
                 st.caption("Using sector beta of " + str(_beta_val_display) + " for " + _current_sector + " (Damodaran 2025)")
             else:
-                _beta_val_display = None
                 st.caption("Stage-based required return will be used instead of WACC formula")
         with _w2:
             st.number_input("Cost of debt (%)", min_value=0.0, max_value=25.0,
@@ -843,12 +860,12 @@ def render_results() -> None:
     _projection_years_val = int(st.session_state.get("inp_projection_years", 5))
     _inputs = _NS(
         stage=_stage,
-        tax_rate_pct=float(st.session_state.get("inp_tax_rate", 25)),
-        capex_pct_of_ebitda=float(st.session_state.get("inp_capex_pct", 5)),
+        tax_rate_pct=float(st.session_state.get("inp_tax", 25)),
+        capex_pct_of_ebitda=float(st.session_state.get("inp_capex", 5)),
         nwc_pct_of_ebitda=3.0,
         da_pct_of_revenue=3.0,
         target_ebitda_margin_pct=float(st.session_state.get("inp_target_margin", 25)),
-        terminal_growth_rate_pct=float(st.session_state.get("inp_terminal_g", 3.0)),
+        terminal_growth_rate_pct=float(st.session_state.get("inp_terminal_growth", 3.0)),
         terminal_value_method=_tv_method,
         exit_multiple_ebitda=_exit_mult,
         use_custom_wacc=bool(st.session_state.get("inp_use_custom_wacc", False)),
