@@ -59,6 +59,9 @@ class CompanyInputs:
     debt_gbp: Optional[float] = 0.0
     equity_gbp: Optional[float] = None
 
+    # Projection horizon
+    projection_years: Optional[int] = 5
+
 
 def calculate_wacc(inputs: CompanyInputs, estimated_ev: float = None) -> tuple:
     """
@@ -154,9 +157,9 @@ def _dcf_scenario(revenue: float, growth_pct: float, ebitda_margin: float,
                   wacc: float, terminal_growth: float, tax_rate: float,
                   capex_pct: float, nwc_pct: float, da_pct: float,
                   tv_method: str, exit_multiple: Optional[float],
-                  scenario_adj: float = 0.0) -> float:
+                  scenario_adj: float = 0.0, years: int = 5) -> float:
     revs, ebs = _project_revenues_ebitda(revenue, growth_pct, ebitda_margin,
-                                         scenario_adj=scenario_adj)
+                                         years=years, scenario_adj=scenario_adj)
     eff_wacc = max(wacc, terminal_growth + 0.01)
     fcfs = _project_fcf(revs, ebs, capex_pct, nwc_pct, tax_rate, da_pct)
     pv   = _pv_fcfs(fcfs, eff_wacc)
@@ -176,20 +179,22 @@ def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
     tg          = _pct(inputs.terminal_growth_rate_pct, 3.0)
     tv_method   = inputs.terminal_value_method or "gordon_growth"
     exit_mult   = inputs.exit_multiple_ebitda
+    proj_years  = getattr(inputs, "projection_years", None) or 5
 
     # Proxy EV with stage WACC to seed WACC formula (avoids circularity)
     stage_wacc = WACC_BY_STAGE.get(inputs.stage, 0.30)
     proxy_ev   = _dcf_scenario(revenue, growth_pct, ebitda_margin, stage_wacc, tg,
                                 tax_rate, capex_pct, nwc_pct, da_pct,
-                                tv_method, exit_mult)
+                                tv_method, exit_mult, years=proj_years)
 
     wacc, wacc_method = calculate_wacc(inputs, estimated_ev=proxy_ev)
 
     sc = dict(tax_rate=tax_rate, capex_pct=capex_pct, nwc_pct=nwc_pct,
-              da_pct=da_pct, tv_method=tv_method, exit_multiple=exit_mult)
+              da_pct=da_pct, tv_method=tv_method, exit_multiple=exit_mult,
+              years=proj_years)
 
     # Compute base-case detail for waterfall / sensitivity
-    revs, ebs = _project_revenues_ebitda(revenue, growth_pct, ebitda_margin)
+    revs, ebs = _project_revenues_ebitda(revenue, growth_pct, ebitda_margin, years=proj_years)
     eff_wacc = max(wacc, tg + 0.01)
     fcfs = _project_fcf(revs, ebs, capex_pct, nwc_pct, tax_rate, da_pct)
     pv_fcfs_list = [f / (1 + eff_wacc) ** (i + 1) for i, f in enumerate(fcfs)]
