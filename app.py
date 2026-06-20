@@ -605,93 +605,91 @@ def render_home() -> None:
 
     # ── Section 4: DCF assumptions ──
     st.markdown("---")
-    show_dcf = st.checkbox("Show DCF assumption overrides", value=False)
-    if show_dcf:
-        st.markdown("**DCF model assumptions**")
-        st.caption("Defaults are calibrated for UK venture-stage companies. Adjust only if you have company-specific data.")
-        _d1, _d2 = st.columns(2)
-        with _d1:
-            st.number_input("Tax rate (%)", min_value=0, max_value=50,
-                            value=25, key="inp_tax_rate", step=1,
-                            help="UK corporation tax is 25%")
-            st.number_input("CapEx (% of EBITDA)", min_value=0, max_value=30,
-                            value=5, key="inp_capex_pct", step=1,
-                            help="Asset-light SaaS: 2-5%. Asset-heavy: 10-20%")
-        with _d2:
-            st.number_input("Target EBITDA margin Year 5 (%)", min_value=-50, max_value=80,
-                            value=25, key="inp_target_margin", step=1,
-                            help="Expected mature margin at end of projection period")
-            st.number_input("Terminal growth rate (%)", min_value=0.0, max_value=8.0,
-                            value=3.0, key="inp_terminal_g", step=0.5,
-                            help="Long-run growth rate beyond projection. Typically 2-4% for developed markets.")
-            _projection_years = st.selectbox(
-                "Projection horizon (years)",
-                options=[3, 5, 7],
-                index=1,
-                key="inp_projection_years",
-                help="Number of years to project cash flows before applying terminal value. 5 years is standard.",
-            )
-            _tv_method = st.radio(
-                "Terminal value method",
-                options=["Gordon Growth Model", "Exit Multiple (EV/EBITDA)"],
-                key="inp_tv_method",
-                help="Gordon Growth: assumes FCF grows at terminal rate forever. Exit Multiple: applies an industry EV/EBITDA multiple to final-year EBITDA.",
-            )
-            if _tv_method == "Exit Multiple (EV/EBITDA)":
-                st.number_input("Exit EV/EBITDA multiple", min_value=1.0, max_value=40.0,
-                                value=12.0, key="inp_exit_multiple", step=0.5,
-                                help="Typical exit multiples by sector: SaaS 12-18x, FinTech 10-15x, HealthTech 8-14x, Marketplace 8-12x")
+    st.markdown("**DCF assumptions**")
+    st.caption("Defaults are calibrated for UK venture-stage companies. Adjust only if you have company-specific data.")
+    _d1, _d2 = st.columns(2)
+    with _d1:
+        st.number_input("Tax rate (%)", min_value=0, max_value=50,
+                        value=25, key="inp_tax_rate", step=1,
+                        help="UK corporation tax is 25%")
+        st.number_input("CapEx (% of EBITDA)", min_value=0, max_value=30,
+                        value=5, key="inp_capex_pct", step=1,
+                        help="Asset-light SaaS: 2-5%. Asset-heavy: 10-20%")
+    with _d2:
+        st.number_input("Target EBITDA margin Year 5 (%)", min_value=-50, max_value=80,
+                        value=25, key="inp_target_margin", step=1,
+                        help="Expected mature margin at end of projection period")
+        st.number_input("Terminal growth rate (%)", min_value=0.0, max_value=8.0,
+                        value=3.0, key="inp_terminal_g", step=0.5,
+                        help="Long-run growth rate beyond projection. Typically 2-4% for developed markets.")
+        _projection_years = st.selectbox(
+            "Projection horizon (years)",
+            options=[3, 5, 7],
+            index=1,
+            key="inp_projection_years",
+            help="Number of years to project cash flows before applying terminal value. 5 years is standard.",
+        )
+        _tv_method = st.radio(
+            "Terminal value method",
+            options=["Gordon Growth Model", "Exit Multiple (EV/EBITDA)"],
+            key="inp_tv_method",
+            help="Gordon Growth: assumes FCF grows at terminal rate forever. Exit Multiple: applies an industry EV/EBITDA multiple to final-year EBITDA.",
+        )
+        if _tv_method == "Exit Multiple (EV/EBITDA)":
+            st.number_input("Exit EV/EBITDA multiple", min_value=1.0, max_value=40.0,
+                            value=12.0, key="inp_exit_multiple", step=0.5,
+                            help="Typical exit multiples by sector: SaaS 12-18x, FinTech 10-15x, HealthTech 8-14x, Marketplace 8-12x")
 
     # ── Section 5: WACC ──
-    show_wacc = st.checkbox("Show WACC inputs", value=False)
-    if show_wacc:
-        st.markdown("**WACC inputs**")
-        _use_custom = st.toggle("Enter WACC directly instead of using formula",
-                                key="inp_use_custom_wacc")
-        if _use_custom:
-            st.number_input("WACC (%)", min_value=1.0, max_value=80.0,
-                            value=28.0, key="inp_custom_wacc", step=0.5,
-                            help="Enter your own WACC directly")
-            st.caption("Overrides all formula inputs below")
-        else:
-            _SECTOR_BETAS = {
-                "FinTech": 1.30, "SaaS": 1.20, "Marketplace": 1.25,
-                "HealthTech": 0.95, "DeepTech": 1.45, "Consumer": 1.10,
-                "EdTech": 1.05, "CleanTech": 1.15, "InsurTech": 1.20,
-                "PropTech": 1.10, "Other": 1.20,
-            }
-            _w1, _w2 = st.columns(2)
-            with _w1:
-                st.number_input("Risk-free rate (%)", min_value=0.0, max_value=15.0,
-                                value=4.2, key="inp_rfr", step=0.1,
-                                help="UK 10-year gilt yield. Currently ~4.2% (June 2026)")
-                st.number_input("Equity risk premium (%)", min_value=0.0, max_value=15.0,
-                                value=5.5, key="inp_erp", step=0.1,
-                                help="Damodaran UK ERP estimate. Typically 4.5-6.5%")
-                _beta_source = st.selectbox(
-                    "Beta source",
-                    options=["Use sector average (recommended)", "Leave blank (use stage-based rate)"],
-                    key="inp_beta_source",
-                    help="Sector betas sourced from Damodaran January 2025 dataset (unlevered)",
-                )
-                _current_sector = st.session_state.get("inp_sector", "Other")
-                if _beta_source == "Use sector average (recommended)":
-                    _beta_val_display = _SECTOR_BETAS.get(_current_sector, 1.20)
-                    st.caption("Using sector beta of " + str(_beta_val_display) + " for " + _current_sector + " (Damodaran 2025)")
-                else:
-                    _beta_val_display = None
-                    st.caption("Stage-based required return will be used instead of WACC formula")
-            with _w2:
-                st.number_input("Cost of debt (%)", min_value=0.0, max_value=25.0,
-                                value=8.0, key="inp_wacc_kd", step=0.5,
-                                help="Interest rate on company debt")
-                st.number_input("Total debt (£)", min_value=0,
-                                value=0, key="inp_wacc_debt", step=50_000, format="%d")
-            st.info(
-                "WACC = (E/V x Ke) + (D/V x Kd x (1-t))\n"
-                "Ke = Risk-free rate + Beta x Equity risk premium\n"
-                "If beta source is left blank, stage-based required return is used instead."
+    st.markdown("---")
+    st.markdown("**WACC inputs**")
+    st.caption("Leave beta source as sector average unless you have a specific WACC in mind.")
+    _use_custom = st.toggle("Enter WACC directly instead of using formula",
+                            key="inp_use_custom_wacc")
+    if _use_custom:
+        st.number_input("WACC (%)", min_value=1.0, max_value=80.0,
+                        value=28.0, key="inp_custom_wacc", step=0.5,
+                        help="Enter your own WACC directly")
+        st.caption("Overrides all formula inputs below")
+    else:
+        _SECTOR_BETAS = {
+            "FinTech": 1.30, "SaaS": 1.20, "Marketplace": 1.25,
+            "HealthTech": 0.95, "DeepTech": 1.45, "Consumer": 1.10,
+            "EdTech": 1.05, "CleanTech": 1.15, "InsurTech": 1.20,
+            "PropTech": 1.10, "Other": 1.20,
+        }
+        _w1, _w2 = st.columns(2)
+        with _w1:
+            st.number_input("Risk-free rate (%)", min_value=0.0, max_value=15.0,
+                            value=4.2, key="inp_rfr", step=0.1,
+                            help="UK 10-year gilt yield. Currently ~4.2% (June 2026)")
+            st.number_input("Equity risk premium (%)", min_value=0.0, max_value=15.0,
+                            value=5.5, key="inp_erp", step=0.1,
+                            help="Damodaran UK ERP estimate. Typically 4.5-6.5%")
+            _beta_source = st.selectbox(
+                "Beta source",
+                options=["Use sector average (recommended)", "Leave blank (use stage-based rate)"],
+                key="inp_beta_source",
+                help="Sector betas sourced from Damodaran January 2025 dataset (unlevered)",
             )
+            _current_sector = st.session_state.get("inp_sector", "Other")
+            if _beta_source == "Use sector average (recommended)":
+                _beta_val_display = _SECTOR_BETAS.get(_current_sector, 1.20)
+                st.caption("Using sector beta of " + str(_beta_val_display) + " for " + _current_sector + " (Damodaran 2025)")
+            else:
+                _beta_val_display = None
+                st.caption("Stage-based required return will be used instead of WACC formula")
+        with _w2:
+            st.number_input("Cost of debt (%)", min_value=0.0, max_value=25.0,
+                            value=8.0, key="inp_wacc_kd", step=0.5,
+                            help="Interest rate on company debt")
+            st.number_input("Total debt (£)", min_value=0,
+                            value=0, key="inp_wacc_debt", step=50_000, format="%d")
+        st.info(
+            "WACC = (E/V x Ke) + (D/V x Kd x (1-t))\n"
+            "Ke = Risk-free rate + Beta x Equity risk premium\n"
+            "If beta source is left blank, stage-based required return is used instead."
+        )
 
     st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
