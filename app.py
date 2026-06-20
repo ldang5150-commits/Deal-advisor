@@ -699,7 +699,6 @@ def render_home() -> None:
             if st.button(name, key=f"demo_{name}", use_container_width=True):
                 _load_preset(name)
                 st.rerun()
-    st.caption("Real company data — Wise FY2025 · Revolut FY2024 · Darktrace FY2024. Override multiples pre-set to match actual valuations.")
 
     st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
@@ -774,7 +773,6 @@ def render_home() -> None:
     # ── Section 4: DCF assumptions ──
     st.markdown("---")
     st.markdown("**DCF assumptions**")
-    st.caption("Defaults are calibrated for UK venture-stage companies. Adjust only if you have company-specific data.")
     _d1, _d2 = st.columns(2)
     with _d1:
         st.number_input("Tax rate (%)", min_value=0, max_value=50, step=1, key="inp_tax")
@@ -802,7 +800,6 @@ def render_home() -> None:
     # ── Section 4b: Comparable company assumptions ──
     st.markdown("---")
     st.markdown("**Comparable company assumptions**")
-    st.caption("Used for the comparables side of the blended valuation. Independent of the DCF model above.")
     from modules.valuation import SECTOR_MULTIPLES as _SM_UI
     _ev_sector = st.session_state.get("sector_select", "FinTech")
     _ev_sector_default = float(_SM_UI.get(_ev_sector, _SM_UI["Other"])["base"])
@@ -832,7 +829,6 @@ def render_home() -> None:
     # ── Section 5: WACC ──
     st.markdown("---")
     st.markdown("**WACC inputs**")
-    st.caption("Leave beta source as sector average unless you have a specific WACC in mind.")
     _use_custom = st.toggle("Enter WACC directly instead of using formula",
                             key="inp_use_custom_wacc")
     if _use_custom:
@@ -862,7 +858,7 @@ def render_home() -> None:
                     unsafe_allow_html=True,
                 )
             else:
-                st.caption("Stage-based required return will be used instead of WACC formula")
+                pass
         with _w2:
             st.number_input("Cost of debt (%)", min_value=0.0, max_value=25.0,
                             value=8.0, key="inp_wacc_kd", step=0.5)
@@ -1114,7 +1110,6 @@ color: #94A3B8; margin: 16px 0 8px 8px;">Settings</p>
                     **_dcf_layout,
                 )
                 st.plotly_chart(fig_comps, use_container_width=True)
-                st.caption("Multiple source: " + _comps.get("source", _sector + " sector average"))
                 if _comps.get("note"):
                     st.caption(_comps["note"])
 
