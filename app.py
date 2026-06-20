@@ -321,6 +321,34 @@ st.markdown("""
   /* ── Dividers ── */
   hr { border-color: #E2E8F0 !important; margin: 1rem 0 !important; }
 
+  /* Sidebar nav fixes */
+  [data-testid="column"]:first-child {
+      min-width: 200px !important;
+      padding-left: 0 !important;
+      overflow: visible !important;
+  }
+
+  /* Prevent sidebar buttons clipping */
+  div[data-testid="stVerticalBlock"] button {
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      width: 100% !important;
+      text-align: left !important;
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+  }
+
+  /* Typography system */
+  h1, .page-title { font-size: 28px !important; font-weight: 500 !important; color: #0F172A !important; letter-spacing: -0.01em !important; margin-bottom: 4px !important; }
+  h2, h3, .section-header { font-size: 20px !important; font-weight: 500 !important; color: #0F172A !important; margin-bottom: 4px !important; }
+  .overline { font-size: 11px !important; font-weight: 400 !important; letter-spacing: 0.1em !important; text-transform: uppercase !important; color: #64748B !important; }
+  p, li, span, div { font-size: 14px !important; color: #1F2937 !important; line-height: 1.6 !important; }
+  .metric-value { font-size: 26px !important; font-weight: 500 !important; color: #0F172A !important; }
+  .caption, small { font-size: 12px !important; color: #64748B !important; }
+  .sidebar-nav-item { font-size: 14px !important; font-weight: 400 !important; color: #64748B !important; }
+  .sidebar-nav-item-active { font-size: 14px !important; font-weight: 500 !important; color: #FFFFFF !important; }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -725,7 +753,7 @@ def render_results() -> None:
     _runway = int(_cash / _burn) if _burn > 0 else 999
 
     # ── Layout: sidebar (1) + main (4) ──
-    nav_col, main_col = st.columns([1.2, 4], gap="large")
+    nav_col, main_col = st.columns([1.5, 4], gap="large")
 
     # ── LEFT SIDEBAR NAV ──
     with nav_col:
@@ -755,19 +783,19 @@ def render_results() -> None:
             "<div style='border-top:1px solid #E2E8F0;margin:12px 8px;'></div>",
             unsafe_allow_html=True,
         )
-        st.markdown(
-            "<p style='font-size:10px;letter-spacing:0.1em;text-transform:uppercase;"
-            "color:#94A3B8;margin:0 0 6px;padding:0 8px;'>Settings</p>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("**API key**")
-        st.text_input(
+        st.markdown("""
+<p style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+color: #94A3B8; margin: 16px 0 8px 8px;">Settings</p>
+""", unsafe_allow_html=True)
+
+        api_key = st.text_input(
             "OpenAI API key",
-            key="inp_openai",
             type="password",
-            placeholder="sk-...",
-            label_visibility="collapsed",
+            key="api_key_sidebar",
+            placeholder="sk-... (optional)"
         )
+        if api_key:
+            st.session_state["api_key"] = api_key
 
     # ── MAIN CONTENT ──
     with main_col:
@@ -1329,7 +1357,12 @@ def render_results() -> None:
 
             def _bar(score, max_score):
                 pct = score / max_score if max_score > 0 else 0
-                color = "#10B981" if pct >= 0.85 else "#EAB308" if pct >= 0.60 else "#EF4444"
+                if max_score == 35:
+                    color = "#10B981" if pct >= 0.85 else "#EAB308" if pct >= 0.60 else "#EF4444"
+                elif max_score == 20:
+                    color = "#10B981" if pct >= 0.80 else "#EAB308" if pct >= 0.55 else "#EF4444"
+                else:  # max_score == 10
+                    color = "#10B981" if pct >= 0.80 else "#EAB308" if pct >= 0.55 else "#EF4444"
                 return f'<div style="background:#F1F5F9;border-radius:4px;height:8px;width:100%;margin:4px 0 8px 0;"><div style="background:{color};border-radius:4px;height:8px;width:{pct*100:.0f}%;"></div></div>'
 
             _VC_INTRO = {
@@ -1349,9 +1382,15 @@ def render_results() -> None:
             }
 
             for rank, match in enumerate(match_list, start=1):
+                total_pct = match.score / 100
+                badge_color = "#10B981" if total_pct >= 0.85 else "#EAB308" if total_pct >= 0.70 else "#EF4444"
                 label = "No." + str(rank) + "  " + str(match.name) + "  |  " + str(match.score) + "/100"
                 st.markdown("---")
-                st.markdown("**" + label + "**")
+                st.markdown(
+                    f'<span style="background:{badge_color};color:#fff;border-radius:4px;padding:2px 8px;font-size:12px;font-weight:500;">'
+                    f'{match.score}/100</span> <strong>{label}</strong>',
+                    unsafe_allow_html=True,
+                )
                 st.divider()
                 st.markdown("**" + str(match.name) + "**")
                 st.caption(str(match.description))

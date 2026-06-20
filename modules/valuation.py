@@ -25,7 +25,7 @@ SECTOR_MULTIPLES = {
 WACC_BY_STAGE = {
     "Pre-Seed":  0.40,
     "Seed":      0.35,
-    "Series A":  0.30,
+    "Series A":  0.28,
     "Series B":  0.25,
     "Series C+": 0.20,
     "Growth":    0.18,
