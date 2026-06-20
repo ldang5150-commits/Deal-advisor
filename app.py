@@ -579,18 +579,30 @@ def _nav_btn(label: str, is_active: bool, key: str) -> bool:
 # ── Preset callbacks ──────────────────────────────────────────────────────────
 def _load_preset(name: str) -> None:
     presets = {
-        "FinTechX":  dict(inp_company="FinTechX",  sector_select="FinTech",
-                          inp_stage="Series A", inp_geo="UK",
-                          inp_revenue=4_000_000,  inp_growth=80,  inp_ebitda=15,
-                          inp_cash=1_500_000, inp_burn=200_000),
-        "CloudBase": dict(inp_company="CloudBase", sector_select="Pure SaaS / Subscription Software",
-                          inp_stage="Series B", inp_geo="UK",
-                          inp_revenue=12_000_000, inp_growth=55,  inp_ebitda=8,
-                          inp_cash=3_000_000, inp_burn=400_000),
-        "HealthOS":  dict(inp_company="HealthOS",  sector_select="HealthTech / Digital Health",
-                          inp_stage="Seed",     inp_geo="UK",
-                          inp_revenue=800_000,   inp_growth=120, inp_ebitda=-30,
-                          inp_cash=600_000, inp_burn=80_000),
+        "Wise": dict(
+            inp_company="Wise plc", sector_select="Payments & Transaction Processing",
+            inp_stage="Growth", inp_geo="Global",
+            inp_revenue=1_869_000_000, inp_growth=21, inp_ebitda=29,
+            inp_cash=0, inp_burn=0,
+            inp_tax=25, inp_capex=4, inp_target_margin=32, inp_terminal_growth=3.0,
+            inp_ev_rev_multiple=3.4, inp_rfr=4.2, inp_erp=5.5,
+        ),
+        "Revolut": dict(
+            inp_company="Revolut", sector_select="FinTech",
+            inp_stage="Growth", inp_geo="Global",
+            inp_revenue=3_100_000_000, inp_growth=72, inp_ebitda=36,
+            inp_cash=0, inp_burn=0,
+            inp_tax=25, inp_capex=3, inp_target_margin=40, inp_terminal_growth=4.0,
+            inp_ev_rev_multiple=11.25, inp_rfr=4.2, inp_erp=5.5,
+        ),
+        "Darktrace": dict(
+            inp_company="Darktrace", sector_select="Cybersecurity",
+            inp_stage="Growth", inp_geo="Global",
+            inp_revenue=552_000_000, inp_growth=26, inp_ebitda=22,
+            inp_cash=0, inp_burn=0,
+            inp_tax=25, inp_capex=4, inp_target_margin=28, inp_terminal_growth=3.5,
+            inp_ev_rev_multiple=6.2, inp_rfr=4.2, inp_erp=5.5,
+        ),
     }
     for k, v in presets[name].items():
         st.session_state[k] = v
@@ -680,13 +692,14 @@ def render_home() -> None:
         unsafe_allow_html=True,
     )
     _qd1, _qd2, _qd3, _qd4, _qd5 = st.columns([3, 1, 1, 1, 3])
-    for col, name in [(_qd2, "FinTechX"), (_qd3, "CloudBase"), (_qd4, "HealthOS")]:
+    for col, name in [(_qd2, "Wise"), (_qd3, "Revolut"), (_qd4, "Darktrace")]:
         with col:
             st.markdown('<div class="demo-btn" style="display:none;"></div>',
                         unsafe_allow_html=True)
             if st.button(name, key=f"demo_{name}", use_container_width=True):
                 _load_preset(name)
                 st.rerun()
+    st.caption("Real company data — Wise FY2025 · Revolut FY2024 · Darktrace FY2024. Override multiples pre-set to match actual valuations.")
 
     st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
