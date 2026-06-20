@@ -583,29 +583,33 @@ def _load_preset(name: str) -> None:
             inp_company="Wise plc", sector_select="Payments & Transaction Processing",
             inp_stage="Growth", inp_geo="Global",
             inp_revenue=1_869_000_000, inp_growth=21, inp_ebitda=29,
-            inp_cash=0, inp_burn=0,
+            inp_cash=1_430_000_000, inp_burn=0,
             inp_tax=25, inp_capex=4, inp_target_margin=32, inp_terminal_growth=3.0,
             inp_ev_rev_multiple=3.4, inp_rfr=4.2, inp_erp=5.5,
+            inp_wacc_debt=230_000_000,
         ),
         "Revolut": dict(
             inp_company="Revolut", sector_select="FinTech",
             inp_stage="Growth", inp_geo="Global",
             inp_revenue=3_100_000_000, inp_growth=72, inp_ebitda=36,
-            inp_cash=0, inp_burn=0,
+            inp_cash=2_100_000_000, inp_burn=0,
             inp_tax=25, inp_capex=3, inp_target_margin=40, inp_terminal_growth=4.0,
             inp_ev_rev_multiple=11.25, inp_rfr=4.2, inp_erp=5.5,
+            inp_wacc_debt=500_000_000,
         ),
         "Darktrace": dict(
             inp_company="Darktrace", sector_select="Cybersecurity",
             inp_stage="Growth", inp_geo="Global",
             inp_revenue=552_000_000, inp_growth=26, inp_ebitda=22,
-            inp_cash=0, inp_burn=0,
+            inp_cash=280_000_000, inp_burn=0,
             inp_tax=25, inp_capex=4, inp_target_margin=28, inp_terminal_growth=3.5,
             inp_ev_rev_multiple=6.2, inp_rfr=4.2, inp_erp=5.5,
+            inp_wacc_debt=0,
         ),
     }
     for k, v in presets[name].items():
         st.session_state[k] = v
+    st.session_state["inp_stage"] = "Growth"
     # Keep inp_sector in sync with sector_select
     st.session_state["inp_sector"] = st.session_state.get("sector_select", "FinTech")
 
@@ -754,12 +758,6 @@ def render_home() -> None:
                 st.button(
                     "!",
                     key="disclaimer_btn",
-                    help=(
-                        "Values shown are sector-average benchmarks based on Damodaran January 2026 data. "
-                        "They represent a typical company in your selected sector — not your specific business. "
-                        "Enter your actual figures for accurate analysis. "
-                        "Changing the sector dropdown automatically updates all defaults."
-                    ),
                 )
             geography = st.selectbox("Geography",
                 ["UK", "Europe", "US", "Asia", "Global", "MENA", "LatAm"],
@@ -850,13 +848,6 @@ def render_home() -> None:
             _current_sector = st.session_state.get("sector_select", "Other")
             if _beta_source == "Use sector average (recommended)":
                 _beta_val_display = SECTOR_BETAS.get(_current_sector, 1.20)
-                st.markdown(
-                    "<span style='font-size:12px; color:#64748B; background:#F1F5F9; "
-                    "padding:3px 8px; border-radius:4px;'>Beta: "
-                    + str(_beta_val_display) + " (" + str(st.session_state.get("sector_select", "sector")) + " average, Damodaran 2026)"
-                    + "</span>",
-                    unsafe_allow_html=True,
-                )
             else:
                 pass
         with _w2:
@@ -984,19 +975,6 @@ def render_results() -> None:
             "<div style='border-top:1px solid #E2E8F0;margin:12px 8px;'></div>",
             unsafe_allow_html=True,
         )
-        st.markdown("""
-<p style="font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-color: #94A3B8; margin: 16px 0 8px 8px;">Settings</p>
-""", unsafe_allow_html=True)
-
-        api_key = st.text_input(
-            "OpenAI API key",
-            type="password",
-            key="api_key_sidebar",
-            placeholder="sk-... (optional)"
-        )
-        if api_key:
-            st.session_state["api_key"] = api_key
 
     # ── MAIN CONTENT ──
     with main_col:
@@ -1250,7 +1228,6 @@ color: #94A3B8; margin: 16px 0 8px 8px;">Settings</p>
             _sens_df = pd.DataFrame(_sens_data).T
             _sens_df.index.name = "WACC \\ Term. Growth"
             st.dataframe(_sens_df, use_container_width=True)
-            st.caption("Sensitivity shows enterprise value (DCF only) across WACC and terminal growth rate combinations. Higher WACC or lower terminal growth reduces value.")
 
         # ──────────────────────────────────────────────────────────────────
         # FUNDRAISING
@@ -1439,7 +1416,6 @@ color: #94A3B8; margin: 16px 0 8px 8px;">Settings</p>
                 _implied = _own2 / 100 * _blend.get("base", 0)
                 _dil_rows.append({"Round": _rnd, "Dilution sold": f"{_d}%", "Founder ownership": f"{_own2:.1f}%", "Implied stake value": fmt_gbp(_implied)})
             st.dataframe(pd.DataFrame(_dil_rows), use_container_width=True, hide_index=True)
-            st.caption("Assumes standard dilution at each round. Actual dilution depends on valuation and round size negotiated.")
 
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("COMPARABLE RAISES - RECENT MARKET DATA")
@@ -1484,7 +1460,6 @@ color: #94A3B8; margin: 16px 0 8px 8px;">Settings</p>
                 _comp_data = next((v for k, v in _COMP_RAISES.items() if k[0] == _sector), None)
             if _comp_data:
                 st.dataframe(pd.DataFrame(_comp_data), use_container_width=True, hide_index=True)
-                st.caption("Source: Beauhurst, Crunchbase, public announcements. Valuations are estimates where not publicly confirmed.")
             else:
                 st.info("No comparable raises found for this sector and stage combination.")
 
@@ -1690,7 +1665,6 @@ color: #94A3B8; margin: 16px 0 8px 8px;">Settings</p>
                 + "x to " + str(round(_max_mult, 1)) + "x with an average of " + str(round(_avg_mult, 1)) + "x. "
                 + _position
             )
-            st.caption("Sources: Beauhurst, Crunchbase, Companies House filings, public announcements. Deal sizes and revenue figures are estimates where not publicly confirmed. Multiples are indicative and should not be used as the sole basis for valuation.")
 
         # ──────────────────────────────────────────────────────────────────
         # INVESTOR OUTREACH
@@ -1737,11 +1711,10 @@ color: #94A3B8; margin: 16px 0 8px 8px;">Settings</p>
                     st.markdown("Score: **" + str(_match.score) + "/100**")
                 st.markdown("**Subject:** " + _subj)
                 st.text_area(
-                    label="Email body — click to edit",
+                    label="",
                     value=_body,
                     height=280,
                     key="email_" + str(_rank),
-                    help="This template is pre-filled with your company metrics. Edit before sending.",
                 )
                 if st.button("Copied!", key="copy_" + str(_rank)):
                     st.write("Paste directly into your email client.")
