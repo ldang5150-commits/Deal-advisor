@@ -995,11 +995,6 @@ def render_results() -> None:
                 _tv_line = "Terminal value: " + str(_blend["exit_multiple_ebitda"]) + "x EV/EBITDA exit on Year 5 EBITDA"
             else:
                 _tv_line = "Terminal value: Gordon Growth at " + str(round(_blend.get("terminal_growth_pct", 3.0), 1)) + "% perpetuity growth"
-            st.info(
-                "WACC: " + str(round(_blend["wacc"] * 100, 1)) + "% — " + str(_blend["wacc_method"])
-                + "\n\n" + _tv_line
-            )
-
             st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
             # Headline cards
@@ -1088,8 +1083,6 @@ def render_results() -> None:
                     **_dcf_layout,
                 )
                 st.plotly_chart(fig_comps, use_container_width=True)
-                if _comps.get("note"):
-                    st.caption(_comps["note"])
 
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("5-year revenue projection")
@@ -1272,8 +1265,7 @@ def render_results() -> None:
             _post_money   = _blend["base"] + _recommended
 
             _fm1, _fm2, _fm3 = st.columns(3)
-            _fm1.metric("Recommended raise", fmt_gbp(_recommended),
-                        help="18 months runway at current burn")
+            _fm1.metric("Recommended raise", fmt_gbp(_recommended))
             _fm2.metric("Estimated dilution", f"{_dilution*100:.0f}%")
             _fm3.metric("Post-money (base)",  fmt_gbp(_post_money))
 
