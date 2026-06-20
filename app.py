@@ -361,6 +361,22 @@ st.markdown("""
     background: #EFF6FF !important;
   }
 
+  /* ── Disclaimer ! button ── */
+  button[kind="secondary"]#disclaimer_btn,
+  .element-container:has(button[data-testid="baseButton-secondary"]) button[data-testid="baseButton-secondary"] {
+    background: #1D4ED8 !important;
+    color: #ffffff !important;
+    border-radius: 50% !important;
+    width: 28px !important;
+    height: 28px !important;
+    min-height: unset !important;
+    padding: 0 !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
   /* ── Back button ── */
   .element-container:has(.back-link) + .element-container .stButton > button {
     background: transparent !important;
@@ -680,11 +696,6 @@ def render_home() -> None:
         "Enter company details</h1>",
         unsafe_allow_html=True,
     )
-    st.info(
-        "Defaults shown are sector-average benchmarks based on Damodaran January 2026 data. "
-        "They represent a typical company in your selected sector — not your specific business. "
-        "Enter your actual figures for accurate analysis."
-    )
 
     # ── Three input cards ──
     card1, card2, card3 = st.columns(3)
@@ -720,7 +731,24 @@ def render_home() -> None:
 
     with card3:
         with st.container(border=True):
-            overline("Capital position")
+            _col_lbl, _col_icon = st.columns([8, 1])
+            with _col_lbl:
+                st.markdown(
+                    "<p style='font-size:11px;letter-spacing:0.1em;text-transform:uppercase;"
+                    "color:#64748B;margin:0 0 8px;'>Capital position</p>",
+                    unsafe_allow_html=True,
+                )
+            with _col_icon:
+                st.button(
+                    "!",
+                    key="disclaimer_btn",
+                    help=(
+                        "Values shown are sector-average benchmarks based on Damodaran January 2026 data. "
+                        "They represent a typical company in your selected sector — not your specific business. "
+                        "Enter your actual figures for accurate analysis. "
+                        "Changing the sector dropdown automatically updates all defaults."
+                    ),
+                )
             geography = st.selectbox("Geography",
                 ["UK", "Europe", "US", "Asia", "Global", "MENA", "LatAm"],
                 key="inp_geo",
@@ -736,34 +764,27 @@ def render_home() -> None:
     st.caption("Defaults are calibrated for UK venture-stage companies. Adjust only if you have company-specific data.")
     _d1, _d2 = st.columns(2)
     with _d1:
-        st.number_input("Tax rate (%)", min_value=0, max_value=50, step=1,
-                        key="inp_tax", help="UK corporation tax is 25%")
-        st.number_input("CapEx (% of EBITDA)", min_value=0, max_value=50, step=1,
-                        key="inp_capex", help="Asset-light SaaS: 2-5%. Asset-heavy: 10-20%")
+        st.number_input("Tax rate (%)", min_value=0, max_value=50, step=1, key="inp_tax")
+        st.number_input("CapEx (% of EBITDA)", min_value=0, max_value=50, step=1, key="inp_capex")
     with _d2:
         st.number_input("Target EBITDA margin Year 5 (%)", min_value=-50, max_value=80, step=1,
-                        key="inp_target_margin",
-                        help="Expected mature margin at end of projection period")
+                        key="inp_target_margin")
         st.number_input("Terminal growth rate (%)", min_value=0.0, max_value=8.0, step=0.5,
-                        key="inp_terminal_growth",
-                        help="Long-run growth rate beyond projection. Typically 2-4% for developed markets.")
+                        key="inp_terminal_growth")
         _projection_years = st.selectbox(
             "Projection horizon (years)",
             options=[3, 5, 7],
             index=1,
             key="inp_projection_years",
-            help="Number of years to project cash flows before applying terminal value. 5 years is standard.",
         )
         _tv_method = st.radio(
             "Terminal value method",
             options=["Gordon Growth Model", "Exit Multiple (EV/EBITDA)"],
             key="inp_tv_method",
-            help="Gordon Growth: assumes FCF grows at terminal rate forever. Exit Multiple: applies an industry EV/EBITDA multiple to final-year EBITDA.",
         )
         if _tv_method == "Exit Multiple (EV/EBITDA)":
             st.number_input("Exit EV/EBITDA multiple", min_value=1.0, max_value=40.0,
-                            value=12.0, key="inp_exit_multiple", step=0.5,
-                            help="Typical exit multiples by sector: SaaS 12-18x, FinTech 10-15x, HealthTech 8-14x, Marketplace 8-12x")
+                            value=12.0, key="inp_exit_multiple", step=0.5)
 
     # ── Section 4b: Comparable company assumptions ──
     st.markdown("---")
@@ -779,7 +800,6 @@ def render_home() -> None:
         "Base EV/Revenue multiple",
         min_value=0.1, max_value=50.0, step=0.5,
         key="inp_ev_rev_multiple",
-        help="Default reflects sector average. Override for premium businesses (e.g. high-growth AI: 15-25x) or discounted (e.g. legacy retail: 0.5x).",
     )
     if abs(_ev_rev_val - _ev_sector_default) > 0.01:
         st.markdown(
@@ -804,21 +824,19 @@ def render_home() -> None:
                             key="inp_use_custom_wacc")
     if _use_custom:
         st.number_input("WACC (%)", min_value=1.0, max_value=80.0,
-                        value=28.0, key="inp_custom_wacc", step=0.5,
-                        help="Enter your own WACC directly")
+                        value=28.0, key="inp_custom_wacc", step=0.5)
         st.caption("Overrides all formula inputs below")
     else:
         _w1, _w2 = st.columns(2)
         with _w1:
             st.number_input("Risk-free rate (%)", min_value=0.0, max_value=15.0, step=0.1,
-                            key="inp_rfr", help="UK 10-year gilt yield. Currently ~4.2% (June 2026)")
+                            key="inp_rfr")
             st.number_input("Equity risk premium (%)", min_value=0.0, max_value=15.0, step=0.1,
-                            key="inp_erp", help="Damodaran UK ERP estimate. Typically 4.5-6.5%")
+                            key="inp_erp")
             _beta_source = st.selectbox(
                 "Beta source",
                 options=["Use sector average (recommended)", "Leave blank (use stage-based rate)"],
                 key="inp_beta_source",
-                help="Sector betas sourced from Damodaran January 2025 dataset (unlevered)",
             )
             _current_sector = st.session_state.get("sector_select", "Other")
             if _beta_source == "Use sector average (recommended)":
@@ -834,8 +852,7 @@ def render_home() -> None:
                 st.caption("Stage-based required return will be used instead of WACC formula")
         with _w2:
             st.number_input("Cost of debt (%)", min_value=0.0, max_value=25.0,
-                            value=8.0, key="inp_wacc_kd", step=0.5,
-                            help="Interest rate on company debt")
+                            value=8.0, key="inp_wacc_kd", step=0.5)
             st.number_input("Total debt (£)", min_value=0,
                             value=0, key="inp_wacc_debt", step=50_000, format="%d")
 
