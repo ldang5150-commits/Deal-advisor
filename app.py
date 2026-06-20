@@ -620,15 +620,19 @@ def render_topnav(company: str = "") -> None:
 def _on_sector_change():
     new_sector = st.session_state["sector_select"]
     d = SECTOR_DEFAULTS.get(new_sector, SECTOR_DEFAULTS["Other"])
-    st.session_state["inp_revenue"]       = d["revenue"]
-    st.session_state["inp_growth"]        = d["growth"]
-    st.session_state["inp_ebitda"]        = d["ebitda"]
-    st.session_state["inp_tax"]           = d["tax"]
-    st.session_state["inp_capex"]         = d["capex"]
-    st.session_state["inp_target_margin"] = d["target_margin"]
+    st.session_state["inp_revenue"]         = d["revenue"]
+    st.session_state["inp_growth"]          = d["growth"]
+    st.session_state["inp_ebitda"]          = d["ebitda"]
+    st.session_state["inp_tax"]             = d["tax"]
+    st.session_state["inp_capex"]           = d["capex"]
+    st.session_state["inp_target_margin"]   = d["target_margin"]
     st.session_state["inp_terminal_growth"] = d["terminal_growth"]
-    st.session_state["inp_rfr"]           = d["rfr"]
-    st.session_state["inp_erp"]           = d["erp"]
+    st.session_state["inp_rfr"]             = d["rfr"]
+    st.session_state["inp_erp"]             = d["erp"]
+    from modules.valuation import SECTOR_MULTIPLES
+    st.session_state["inp_ev_rev_multiple"] = float(
+        SECTOR_MULTIPLES.get(new_sector, SECTOR_MULTIPLES["Other"])["base"]
+    )
 
 
 def render_home() -> None:
@@ -648,6 +652,10 @@ def render_home() -> None:
         st.session_state["inp_terminal_growth"] = _d0["terminal_growth"]
         st.session_state["inp_rfr"]             = _d0["rfr"]
         st.session_state["inp_erp"]             = _d0["erp"]
+        from modules.valuation import SECTOR_MULTIPLES as _SM0
+        st.session_state["inp_ev_rev_multiple"] = float(
+            _SM0.get(st.session_state["sector_select"], _SM0["Other"])["base"]
+        )
 
     # ── Demo quick-load ──
     st.markdown(
@@ -739,6 +747,32 @@ def render_home() -> None:
         st.number_input("Terminal growth rate (%)", min_value=0.0, max_value=8.0, step=0.5,
                         key="inp_terminal_growth",
                         help="Long-run growth rate beyond projection. Typically 2-4% for developed markets.")
+        from modules.valuation import SECTOR_MULTIPLES as _SM_UI
+        _ev_sector = st.session_state.get("sector_select", "FinTech")
+        _ev_sector_default = float(_SM_UI.get(_ev_sector, _SM_UI["Other"])["base"])
+        if "inp_ev_rev_multiple" not in st.session_state:
+            st.session_state["inp_ev_rev_multiple"] = _ev_sector_default
+        st.markdown("**EV/Revenue multiple (comparable companies)**")
+        _ev_rev_val = st.number_input(
+            "Base EV/Revenue multiple",
+            min_value=0.1, max_value=50.0, step=0.5,
+            key="inp_ev_rev_multiple",
+            help="Default reflects sector average. Override for premium businesses (e.g. high-growth AI: 15-25x) or discounted (e.g. legacy retail: 0.5x).",
+        )
+        if abs(_ev_rev_val - _ev_sector_default) > 0.01:
+            st.markdown(
+                "<span style='font-size:11px; color:#92400E; background:#FEF3C7; padding:3px 8px; "
+                "border-radius:4px;'>Override active: " + str(_ev_rev_val) + "x vs sector default of "
+                + str(_ev_sector_default) + "x</span>",
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                "<span style='font-size:11px; color:#64748B; background:#F1F5F9; padding:3px 8px; "
+                "border-radius:4px;'>Using " + _ev_sector + " sector default ("
+                + str(_ev_sector_default) + "x)</span>",
+                unsafe_allow_html=True,
+            )
         _projection_years = st.selectbox(
             "Projection horizon (years)",
             options=[3, 5, 7],
@@ -877,9 +911,14 @@ def render_results() -> None:
         total_debt_gbp=float(st.session_state.get("inp_wacc_debt", 0)),
         equity_gbp=None,
         projection_years=_projection_years_val,
+        custom_ev_rev_multiple=float(st.session_state.get("inp_ev_rev_multiple", 0)) or None,
     )
     _dcf   = dcf_valuation(_revenue, _growth_pct, _ebitda_margin, _inputs)
-    _comps = comparable_valuation(_revenue, _sector)
+    _comps = comparable_valuation(
+        _revenue, _sector,
+        custom_ev_rev_multiple=_inputs.custom_ev_rev_multiple,
+        growth_pct=_growth_pct,
+    )
     _blend = blended_valuation(_dcf, _comps)
     _runway = int(_cash / _burn) if _burn > 0 else 999
 
@@ -1040,6 +1079,9 @@ color: #94A3B8; margin: 16px 0 8px 8px;">Settings</p>
                     **_dcf_layout,
                 )
                 st.plotly_chart(fig_comps, use_container_width=True)
+                st.caption("Multiple source: " + _comps.get("source", _sector + " sector average"))
+                if _comps.get("note"):
+                    st.caption(_comps["note"])
 
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("5-year revenue projection")

@@ -89,6 +89,9 @@ class CompanyInputs:
     # Projection horizon
     projection_years: Optional[int] = 5
 
+    # Comparable valuation override
+    custom_ev_rev_multiple: Optional[float] = None
+
 
 def calculate_wacc(inputs: CompanyInputs, estimated_ev: float = None) -> tuple:
     """
@@ -253,13 +256,38 @@ def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
     }
 
 
-def comparable_valuation(revenue: float, sector: str) -> dict:
-    """Return low/base/high EV via revenue multiples."""
+def comparable_valuation(revenue: float, sector: str,
+                         custom_ev_rev_multiple: Optional[float] = None,
+                         growth_pct: float = 0.0) -> dict:
+    """Return low/base/high EV via revenue multiples with optional override and growth premium."""
     m = SECTOR_MULTIPLES.get(sector, SECTOR_MULTIPLES["Other"])
+
+    if custom_ev_rev_multiple and custom_ev_rev_multiple > 0:
+        base  = float(custom_ev_rev_multiple)
+        low   = base * 0.6
+        high  = base * 1.6
+        source = "User-specified " + str(round(base, 1)) + "x base multiple"
+    else:
+        low   = m["low"]
+        base  = m["base"]
+        high  = m["high"]
+        source = sector + " sector average (Damodaran 2026)"
+
+    growth_premium = (1.4 if growth_pct >= 100 else
+                      1.25 if growth_pct >= 75 else
+                      1.15 if growth_pct >= 50 else
+                      1.05 if growth_pct >= 30 else 1.0)
+
     return {
-        "low":  revenue * m["low"],
-        "base": revenue * m["base"],
-        "high": revenue * m["high"],
+        "low":  revenue * low,
+        "base": revenue * base * growth_premium,
+        "high": revenue * high * growth_premium,
+        "source": source,
+        "multiples": {"low": low, "base": base, "high": high},
+        "growth_premium": growth_premium,
+        "note": (str(round(base, 1)) + "x EV/Rev × "
+                 + str(round(growth_premium, 2)) + "x growth premium ("
+                 + str(round(growth_pct, 0)) + "% YoY growth)"),
     }
 
 
