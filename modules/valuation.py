@@ -7,28 +7,55 @@ from typing import Optional
 import pandas as pd
 
 
-# ── Sector multiple benchmarks (EV/Revenue) ─────────────────────────────────
+# ── Sector multiple benchmarks (EV/Revenue) — Damodaran Jan 2026 + 20-30% private discount ──
 SECTOR_MULTIPLES = {
-    "FinTech":        {"low": 4.0,  "base": 7.0,  "high": 12.0},
-    "SaaS":           {"low": 5.0,  "base": 9.0,  "high": 15.0},
-    "HealthTech":     {"low": 3.5,  "base": 6.0,  "high": 10.0},
-    "EdTech":         {"low": 2.5,  "base": 4.5,  "high": 8.0},
-    "CleanTech":      {"low": 3.0,  "base": 5.5,  "high": 9.0},
-    "E-Commerce":     {"low": 1.5,  "base": 3.0,  "high": 5.5},
-    "DeepTech":       {"low": 4.0,  "base": 8.0,  "high": 14.0},
-    "Cybersecurity":  {"low": 5.0,  "base": 9.5,  "high": 16.0},
-    "MarketPlace":    {"low": 2.0,  "base": 4.0,  "high": 7.0},
-    "Other":          {"low": 2.0,  "base": 4.0,  "high": 7.0},
+    "Pure SaaS / Subscription Software":  {"low": 4.0,  "base": 7.0,  "high": 12.0},
+    "Enterprise Software (B2B)":          {"low": 3.5,  "base": 6.0,  "high": 10.0},
+    "Cybersecurity":                       {"low": 5.0,  "base": 8.5,  "high": 14.0},
+    "Semiconductors & Hardware":          {"low": 2.0,  "base": 4.0,  "high": 7.0},
+    "AI / Machine Learning":              {"low": 6.0,  "base": 12.0, "high": 22.0},
+    "FinTech":                            {"low": 4.0,  "base": 7.0,  "high": 12.0},
+    "InsurTech":                          {"low": 3.0,  "base": 5.5,  "high": 9.0},
+    "Payments & Transaction Processing":  {"low": 4.0,  "base": 7.5,  "high": 13.0},
+    "Wealth Management & Trading":        {"low": 2.5,  "base": 5.0,  "high": 8.0},
+    "HealthTech / Digital Health":        {"low": 3.0,  "base": 6.0,  "high": 10.0},
+    "Biotech & Pharmaceuticals":          {"low": 3.0,  "base": 7.0,  "high": 15.0},
+    "Medical Devices":                    {"low": 2.5,  "base": 5.0,  "high": 9.0},
+    "E-Commerce (inventory-based)":       {"low": 0.4,  "base": 1.0,  "high": 2.5},
+    "Consumer Marketplace (asset-light)": {"low": 3.0,  "base": 5.5,  "high": 9.0},
+    "Consumer Apps & Social":             {"low": 2.0,  "base": 4.5,  "high": 9.0},
+    "Consumer Goods & FMCG":             {"low": 1.0,  "base": 2.5,  "high": 5.0},
+    "Food & Beverage":                    {"low": 0.8,  "base": 1.8,  "high": 3.5},
+    "DeepTech & Advanced Manufacturing":  {"low": 3.0,  "base": 7.0,  "high": 14.0},
+    "CleanTech & Renewable Energy":       {"low": 2.5,  "base": 5.0,  "high": 9.0},
+    "Logistics & Supply Chain":           {"low": 0.8,  "base": 2.0,  "high": 4.0},
+    "Aerospace & Defence":                {"low": 0.8,  "base": 1.8,  "high": 3.5},
+    "EdTech":                            {"low": 2.0,  "base": 4.0,  "high": 7.0},
+    "PropTech & Real Estate":            {"low": 1.5,  "base": 3.5,  "high": 6.5},
+    "Media & Entertainment":             {"low": 1.0,  "base": 2.5,  "high": 5.0},
+    "Telecoms":                          {"low": 0.8,  "base": 1.5,  "high": 2.8},
+    "Energy (Oil, Gas, Mining)":         {"low": 0.5,  "base": 1.2,  "high": 2.5},
+    "Retail (Physical)":                 {"low": 0.3,  "base": 0.7,  "high": 1.5},
+    "Professional Services":             {"low": 0.8,  "base": 1.8,  "high": 3.5},
+    # Legacy keys — kept for backward compatibility with COMPARABLE_TRANSACTIONS lookups
+    "SaaS":        {"low": 4.0,  "base": 7.0,  "high": 12.0},
+    "HealthTech":  {"low": 3.0,  "base": 6.0,  "high": 10.0},
+    "CleanTech":   {"low": 2.5,  "base": 5.0,  "high": 9.0},
+    "DeepTech":    {"low": 3.0,  "base": 7.0,  "high": 14.0},
+    "MarketPlace": {"low": 3.0,  "base": 5.5,  "high": 9.0},
+    "E-Commerce":  {"low": 0.4,  "base": 1.0,  "high": 2.5},
+    "Other":       {"low": 2.0,  "base": 4.0,  "high": 7.0},
 }
 
 # Stage-based WACC (cost of equity, 100% equity assumed)
 WACC_BY_STAGE = {
-    "Pre-Seed":  0.40,
+    "Pre-Seed":  0.45,
     "Seed":      0.35,
     "Series A":  0.28,
-    "Series B":  0.25,
-    "Series C+": 0.20,
-    "Growth":    0.18,
+    "Series B":  0.22,
+    "Series C+": 0.18,
+    "Series C":  0.18,
+    "Growth":    0.15,
 }
 
 

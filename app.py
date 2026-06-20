@@ -15,6 +15,86 @@ from modules.vc_matching import score_investors
 from types import SimpleNamespace as MatchResult
 from types import SimpleNamespace as _NS
 
+# ── Sector betas (Damodaran Jan 2025, unlevered) ──────────────────────────────
+SECTOR_BETAS = {
+    "Pure SaaS / Subscription Software": 1.20,
+    "Enterprise Software (B2B)": 1.10,
+    "Cybersecurity": 1.35,
+    "Semiconductors & Hardware": 1.40,
+    "AI / Machine Learning": 1.50,
+    "FinTech": 1.30,
+    "InsurTech": 1.20,
+    "Payments & Transaction Processing": 1.25,
+    "Wealth Management & Trading": 1.15,
+    "HealthTech / Digital Health": 0.95,
+    "Biotech & Pharmaceuticals": 0.85,
+    "Medical Devices": 0.90,
+    "E-Commerce (inventory-based)": 1.10,
+    "Consumer Marketplace (asset-light)": 1.25,
+    "Consumer Apps & Social": 1.30,
+    "Consumer Goods & FMCG": 0.80,
+    "Food & Beverage": 0.75,
+    "DeepTech & Advanced Manufacturing": 1.45,
+    "CleanTech & Renewable Energy": 1.15,
+    "Logistics & Supply Chain": 1.05,
+    "Aerospace & Defence": 0.85,
+    "EdTech": 1.05,
+    "PropTech & Real Estate": 1.10,
+    "Media & Entertainment": 1.00,
+    "Telecoms": 0.80,
+    "Energy (Oil, Gas, Mining)": 1.20,
+    "Retail (Physical)": 0.90,
+    "Professional Services": 0.85,
+    "Other": 1.20,
+}
+
+# ── Sector-specific model defaults ───────────────────────────────────────────
+SECTOR_DEFAULTS = {
+    "Pure SaaS / Subscription Software": {"revenue": 3_000_000, "growth": 80, "ebitda": -15, "tax": 25, "capex": 3, "target_margin": 30, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "£1m-£10m ARR", "burn_note": "High burn typical pre-profitability"},
+    "Enterprise Software (B2B)": {"revenue": 5_000_000, "growth": 40, "ebitda": 5, "tax": 25, "capex": 4, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "£2m-£20m ARR", "burn_note": "Longer sales cycles, more stable burn"},
+    "Cybersecurity": {"revenue": 4_000_000, "growth": 60, "ebitda": -10, "tax": 25, "capex": 3, "target_margin": 28, "terminal_growth": 3.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "£1m-£15m ARR", "burn_note": "R&D heavy, high burn expected"},
+    "Semiconductors & Hardware": {"revenue": 8_000_000, "growth": 25, "ebitda": 10, "tax": 25, "capex": 15, "target_margin": 22, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Mixed recurring and project revenue", "burn_note": "High capex intensity"},
+    "AI / Machine Learning": {"revenue": 2_000_000, "growth": 120, "ebitda": -30, "tax": 25, "capex": 5, "target_margin": 35, "terminal_growth": 4.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Early ARR, rapid growth", "burn_note": "Very high compute costs"},
+    "FinTech": {"revenue": 4_000_000, "growth": 70, "ebitda": 10, "tax": 25, "capex": 4, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "£1m-£10m revenue", "burn_note": "Regulatory costs significant"},
+    "InsurTech": {"revenue": 5_000_000, "growth": 45, "ebitda": 5, "tax": 25, "capex": 3, "target_margin": 20, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Mix of premium and SaaS revenue", "burn_note": "Claims reserves affect burn"},
+    "Payments & Transaction Processing": {"revenue": 6_000_000, "growth": 55, "ebitda": 15, "tax": 25, "capex": 5, "target_margin": 28, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Transaction volume driven", "burn_note": "Capital efficient at scale"},
+    "Wealth Management & Trading": {"revenue": 3_000_000, "growth": 35, "ebitda": 20, "tax": 25, "capex": 3, "target_margin": 30, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "AUM-based fees", "burn_note": "Relatively capital efficient"},
+    "HealthTech / Digital Health": {"revenue": 3_000_000, "growth": 60, "ebitda": -10, "tax": 25, "capex": 4, "target_margin": 22, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "£500k-£5m ARR", "burn_note": "Clinical validation costs significant"},
+    "Biotech & Pharmaceuticals": {"revenue": 2_000_000, "growth": 50, "ebitda": -60, "tax": 25, "capex": 8, "target_margin": 35, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Pre-revenue to early revenue", "burn_note": "Very high R&D burn, long timeline"},
+    "Medical Devices": {"revenue": 4_000_000, "growth": 30, "ebitda": 5, "tax": 25, "capex": 10, "target_margin": 20, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Hardware + recurring revenue", "burn_note": "Manufacturing capex heavy"},
+    "E-Commerce (inventory-based)": {"revenue": 10_000_000, "growth": 30, "ebitda": 5, "tax": 25, "capex": 5, "target_margin": 12, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "GMV-based", "burn_note": "Working capital intensive, thin margins"},
+    "Consumer Marketplace (asset-light)": {"revenue": 5_000_000, "growth": 55, "ebitda": -5, "tax": 25, "capex": 3, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Take rate on GMV", "burn_note": "Supply-demand balance key"},
+    "Consumer Apps & Social": {"revenue": 2_000_000, "growth": 80, "ebitda": -25, "tax": 25, "capex": 3, "target_margin": 20, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Ad or subscription revenue", "burn_note": "User acquisition costs high"},
+    "Consumer Goods & FMCG": {"revenue": 8_000_000, "growth": 25, "ebitda": 12, "tax": 25, "capex": 6, "target_margin": 18, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Product revenue", "burn_note": "Distribution and marketing heavy"},
+    "Food & Beverage": {"revenue": 6_000_000, "growth": 20, "ebitda": 8, "tax": 25, "capex": 6, "target_margin": 15, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Product revenue", "burn_note": "Logistics and COGS intensive"},
+    "DeepTech & Advanced Manufacturing": {"revenue": 3_000_000, "growth": 50, "ebitda": -20, "tax": 25, "capex": 12, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Project and licence revenue", "burn_note": "High R&D and capex"},
+    "CleanTech & Renewable Energy": {"revenue": 5_000_000, "growth": 40, "ebitda": 10, "tax": 25, "capex": 15, "target_margin": 22, "terminal_growth": 3.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Project and recurring revenue", "burn_note": "Capital intensive deployment"},
+    "Logistics & Supply Chain": {"revenue": 10_000_000, "growth": 25, "ebitda": 8, "tax": 25, "capex": 8, "target_margin": 15, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Volume-based revenue", "burn_note": "Asset and working capital heavy"},
+    "Aerospace & Defence": {"revenue": 8_000_000, "growth": 15, "ebitda": 12, "tax": 25, "capex": 10, "target_margin": 18, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Government contract revenue", "burn_note": "Long contract cycles"},
+    "EdTech": {"revenue": 3_000_000, "growth": 45, "ebitda": 5, "tax": 25, "capex": 3, "target_margin": 22, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "B2B or B2C subscription", "burn_note": "Content costs significant"},
+    "PropTech & Real Estate": {"revenue": 5_000_000, "growth": 35, "ebitda": 10, "tax": 25, "capex": 4, "target_margin": 20, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Transaction or SaaS revenue", "burn_note": "Market cycle sensitive"},
+    "Media & Entertainment": {"revenue": 5_000_000, "growth": 20, "ebitda": 10, "tax": 25, "capex": 5, "target_margin": 18, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Ad, subscription, or licensing", "burn_note": "Content production costs"},
+    "Telecoms": {"revenue": 15_000_000, "growth": 10, "ebitda": 20, "tax": 25, "capex": 18, "target_margin": 25, "terminal_growth": 1.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Subscription revenue", "burn_note": "Infrastructure capex very high"},
+    "Energy (Oil, Gas, Mining)": {"revenue": 20_000_000, "growth": 10, "ebitda": 25, "tax": 30, "capex": 25, "target_margin": 28, "terminal_growth": 1.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Commodity price linked", "burn_note": "Exploration capex very high"},
+    "Retail (Physical)": {"revenue": 10_000_000, "growth": 8, "ebitda": 6, "tax": 25, "capex": 5, "target_margin": 10, "terminal_growth": 1.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Store-based revenue", "burn_note": "Lease and inventory costs high"},
+    "Professional Services": {"revenue": 5_000_000, "growth": 15, "ebitda": 18, "tax": 25, "capex": 2, "target_margin": 22, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Fee-based revenue", "burn_note": "People cost is main expense"},
+    "Other": {"revenue": 4_000_000, "growth": 40, "ebitda": 10, "tax": 25, "capex": 5, "target_margin": 20, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Varies", "burn_note": "Varies by business model"},
+}
+
+_ALL_SECTORS = [
+    "Pure SaaS / Subscription Software", "Enterprise Software (B2B)", "Cybersecurity",
+    "Semiconductors & Hardware", "AI / Machine Learning",
+    "FinTech", "InsurTech", "Payments & Transaction Processing", "Wealth Management & Trading",
+    "HealthTech / Digital Health", "Biotech & Pharmaceuticals", "Medical Devices",
+    "E-Commerce (inventory-based)", "Consumer Marketplace (asset-light)", "Consumer Apps & Social",
+    "Consumer Goods & FMCG", "Food & Beverage",
+    "DeepTech & Advanced Manufacturing", "CleanTech & Renewable Energy",
+    "Logistics & Supply Chain", "Aerospace & Defence",
+    "EdTech", "PropTech & Real Estate", "Media & Entertainment",
+    "Telecoms", "Energy (Oil, Gas, Mining)", "Retail (Physical)",
+    "Professional Services", "Other",
+]
+
 COMPARABLE_TRANSACTIONS = {
     "FinTech": [
         {"target": "Currencycloud", "acquirer": "Visa", "year": 2021, "deal_size_gbp": 700_000_000, "revenue_gbp": 60_000_000, "ev_rev_multiple": 11.7, "detail": "Cross-border payments infrastructure"},
@@ -487,11 +567,11 @@ def _load_preset(name: str) -> None:
                           inp_stage="Series A", inp_geo="UK",
                           inp_revenue=4_000_000,  inp_growth=80,  inp_ebitda=15,
                           inp_cash=1_500_000, inp_burn=200_000),
-        "CloudBase": dict(inp_company="CloudBase", inp_sector="SaaS",
+        "CloudBase": dict(inp_company="CloudBase", inp_sector="Pure SaaS / Subscription Software",
                           inp_stage="Series B", inp_geo="UK",
                           inp_revenue=12_000_000, inp_growth=55,  inp_ebitda=8,
                           inp_cash=3_000_000, inp_burn=400_000),
-        "HealthOS":  dict(inp_company="HealthOS",  inp_sector="HealthTech",
+        "HealthOS":  dict(inp_company="HealthOS",  inp_sector="HealthTech / Digital Health",
                           inp_stage="Seed",     inp_geo="UK",
                           inp_revenue=800_000,   inp_growth=120, inp_ebitda=-30,
                           inp_cash=600_000, inp_burn=80_000),
@@ -556,13 +636,23 @@ def render_home() -> None:
     st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
     # ── Page heading ──
-    st.markdown(
-        "<h1 style='font-size:28px;font-weight:500;color:#0F172A;margin:0 0 6px;'>"
-        "Enter company details</h1>"
-        "<p style='font-size:14px;color:#64748B;margin:0 0 24px;'>"
-        "Provide financial and contextual information to generate your analysis</p>",
-        unsafe_allow_html=True,
-    )
+    _htitle, _hinfo = st.columns([10, 1])
+    with _htitle:
+        st.markdown(
+            "<h1 style='font-size:28px;font-weight:500;color:#0F172A;margin:0 0 6px;'>"
+            "Enter company details</h1>"
+            "<p style='font-size:14px;color:#64748B;margin:0 0 24px;'>"
+            "Provide financial and contextual information to generate your analysis</p>",
+            unsafe_allow_html=True,
+        )
+    with _hinfo:
+        st.markdown(
+            "<span title='These are sector-average defaults based on Damodaran 2026 benchmarks. "
+            "Enter your actual company figures for accurate analysis. "
+            "Default values reflect a typical company in your selected sector, not your specific business.' "
+            "style='font-size:20px;cursor:help;color:#94A3B8;'>&#9432;</span>",
+            unsafe_allow_html=True,
+        )
 
     # ── Three input cards ──
     card1, card2, card3 = st.columns(3)
@@ -570,25 +660,27 @@ def render_home() -> None:
     with card1:
         with st.container(border=True):
             overline("Company profile")
-            company_name = st.text_input("Name",   key="inp_company")
-            sector = st.selectbox("Sector",
-                ["FinTech", "SaaS", "HealthTech", "EdTech", "CleanTech",
-                 "E-Commerce", "DeepTech", "Cybersecurity", "MarketPlace", "Other"],
-                key="inp_sector",
-            )
+            company_name = st.text_input("Name", key="inp_company")
+            sector = st.selectbox("Sector", options=_ALL_SECTORS, key="inp_sector")
             stage = st.selectbox("Stage",
                 ["Pre-Seed", "Seed", "Series A", "Series B", "Series C+", "Growth"],
                 key="inp_stage",
             )
+            _sd = SECTOR_DEFAULTS.get(sector, SECTOR_DEFAULTS["Other"])
+            st.caption(_sd["typical_arr"] + " · " + _sd["burn_note"])
 
     with card2:
         with st.container(border=True):
             overline("Financials")
+            _sd = SECTOR_DEFAULTS.get(st.session_state.get("inp_sector", "FinTech"), SECTOR_DEFAULTS["Other"])
             revenue = st.number_input("Annual revenue (£)", min_value=0,
+                                      value=st.session_state.get("inp_revenue", _sd["revenue"]),
                                       key="inp_revenue", step=100_000, format="%d")
             growth_pct = st.number_input("Revenue growth (%)", min_value=-100,
+                                         value=st.session_state.get("inp_growth", _sd["growth"]),
                                          key="inp_growth", step=5)
             ebitda_margin = st.number_input("EBITDA margin (%)", min_value=-100,
+                                            value=st.session_state.get("inp_ebitda", _sd["ebitda"]),
                                             key="inp_ebitda", step=1)
 
     with card3:
@@ -604,23 +696,28 @@ def render_home() -> None:
                                    key="inp_burn", step=10_000, format="%d")
 
     # ── Section 4: DCF assumptions ──
+    _sd_dcf = SECTOR_DEFAULTS.get(st.session_state.get("inp_sector", "FinTech"), SECTOR_DEFAULTS["Other"])
     st.markdown("---")
     st.markdown("**DCF assumptions**")
     st.caption("Defaults are calibrated for UK venture-stage companies. Adjust only if you have company-specific data.")
     _d1, _d2 = st.columns(2)
     with _d1:
         st.number_input("Tax rate (%)", min_value=0, max_value=50,
-                        value=25, key="inp_tax_rate", step=1,
+                        value=st.session_state.get("inp_tax_rate", _sd_dcf["tax"]),
+                        key="inp_tax_rate", step=1,
                         help="UK corporation tax is 25%")
         st.number_input("CapEx (% of EBITDA)", min_value=0, max_value=30,
-                        value=5, key="inp_capex_pct", step=1,
+                        value=st.session_state.get("inp_capex_pct", _sd_dcf["capex"]),
+                        key="inp_capex_pct", step=1,
                         help="Asset-light SaaS: 2-5%. Asset-heavy: 10-20%")
     with _d2:
         st.number_input("Target EBITDA margin Year 5 (%)", min_value=-50, max_value=80,
-                        value=25, key="inp_target_margin", step=1,
+                        value=st.session_state.get("inp_target_margin", _sd_dcf["target_margin"]),
+                        key="inp_target_margin", step=1,
                         help="Expected mature margin at end of projection period")
         st.number_input("Terminal growth rate (%)", min_value=0.0, max_value=8.0,
-                        value=3.0, key="inp_terminal_g", step=0.5,
+                        value=st.session_state.get("inp_terminal_g", _sd_dcf["terminal_growth"]),
+                        key="inp_terminal_g", step=0.5,
                         help="Long-run growth rate beyond projection. Typically 2-4% for developed markets.")
         _projection_years = st.selectbox(
             "Projection horizon (years)",
@@ -652,19 +749,15 @@ def render_home() -> None:
                         help="Enter your own WACC directly")
         st.caption("Overrides all formula inputs below")
     else:
-        _SECTOR_BETAS = {
-            "FinTech": 1.30, "SaaS": 1.20, "Marketplace": 1.25,
-            "HealthTech": 0.95, "DeepTech": 1.45, "Consumer": 1.10,
-            "EdTech": 1.05, "CleanTech": 1.15, "InsurTech": 1.20,
-            "PropTech": 1.10, "Other": 1.20,
-        }
         _w1, _w2 = st.columns(2)
         with _w1:
             st.number_input("Risk-free rate (%)", min_value=0.0, max_value=15.0,
-                            value=4.2, key="inp_rfr", step=0.1,
+                            value=st.session_state.get("inp_rfr", 4.2),
+                            key="inp_rfr", step=0.1,
                             help="UK 10-year gilt yield. Currently ~4.2% (June 2026)")
             st.number_input("Equity risk premium (%)", min_value=0.0, max_value=15.0,
-                            value=5.5, key="inp_erp", step=0.1,
+                            value=st.session_state.get("inp_erp", 5.5),
+                            key="inp_erp", step=0.1,
                             help="Damodaran UK ERP estimate. Typically 4.5-6.5%")
             _beta_source = st.selectbox(
                 "Beta source",
@@ -674,7 +767,7 @@ def render_home() -> None:
             )
             _current_sector = st.session_state.get("inp_sector", "Other")
             if _beta_source == "Use sector average (recommended)":
-                _beta_val_display = _SECTOR_BETAS.get(_current_sector, 1.20)
+                _beta_val_display = SECTOR_BETAS.get(_current_sector, 1.20)
                 st.caption("Using sector beta of " + str(_beta_val_display) + " for " + _current_sector + " (Damodaran 2025)")
             else:
                 _beta_val_display = None
@@ -739,15 +832,9 @@ def render_results() -> None:
     _cod           = st.session_state.inp_cod
     _openai_key    = st.session_state.inp_openai
 
-    _SECTOR_BETAS_RESULTS = {
-        "FinTech": 1.30, "SaaS": 1.20, "Marketplace": 1.25,
-        "HealthTech": 0.95, "DeepTech": 1.45, "Consumer": 1.10,
-        "EdTech": 1.05, "CleanTech": 1.15, "InsurTech": 1.20,
-        "PropTech": 1.10, "Other": 1.20,
-    }
     _beta_source_val = st.session_state.get("inp_beta_source", "Use sector average (recommended)")
     if _beta_source_val == "Use sector average (recommended)":
-        _beta_val = _SECTOR_BETAS_RESULTS.get(_sector, 1.20)
+        _beta_val = SECTOR_BETAS.get(_sector, 1.20)
     else:
         _beta_val = None
     _tv_label  = st.session_state.get("inp_tv_method", "Gordon Growth Model")
