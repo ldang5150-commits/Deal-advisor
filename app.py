@@ -923,6 +923,7 @@ def render_topnav(company: str = "") -> None:
 # HOME PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 def _on_sector_change():
+    print(f"[DEBUG] on_sector_change fired. _preset_loaded = {st.session_state.get('_preset_loaded', 'NOT SET')}")
     if st.session_state.pop("_preset_loaded", False):
         return  # Skip overwriting — preset values take priority
     new_sector = st.session_state["sector_select"]
