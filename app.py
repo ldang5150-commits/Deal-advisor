@@ -1145,11 +1145,7 @@ def render_home() -> None:
             st.session_state.pop("blended_base_ev", None)
             st.session_state["active_tab"] = "Valuation"
             st.session_state["page"] = "results"
-            st.markdown("""<script>
-window.scrollTo({top:0,behavior:'instant'});
-document.documentElement.scrollTop=0;
-document.body.scrollTop=0;
-</script>""", unsafe_allow_html=True)
+            st.session_state["scroll_to_top"] = True
             st.rerun()
 
     st.markdown(
@@ -1163,12 +1159,12 @@ document.body.scrollTop=0;
 # RESULTS PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 def render_results() -> None:
-    st.markdown("""<script>
-setTimeout(function() {
-    window.scrollTo({top: 0, behavior: 'instant'});
-    document.documentElement.scrollTop = 0;
-}, 50);
-</script>""", unsafe_allow_html=True)
+    st.markdown('<div id="results-top"></div>', unsafe_allow_html=True)
+    if st.session_state.pop("scroll_to_top", False):
+        st.markdown(
+            '<script>window.scrollTo(0,0);document.documentElement.scrollTop=0;</script>',
+            unsafe_allow_html=True,
+        )
     # ── Read snapshotted values (set by Run analysis / demo buttons) ──────────
     # _run_ keys are written at the moment the user clicks Run or a demo button,
     # capturing the actual widget state. inp_ keys are the fallback for first load.
