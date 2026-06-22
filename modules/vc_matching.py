@@ -5,6 +5,63 @@ from dataclasses import dataclass
 import pandas as pd
 
 
+SECTOR_NAME_MAP = {
+    "Pure SaaS / Subscription Software": ["SaaS", "Software", "B2B SaaS",
+                                           "Enterprise Software", "Pure SaaS"],
+    "Enterprise Software (B2B)": ["Enterprise Software", "B2B", "SaaS",
+                                   "Software", "B2B SaaS"],
+    "Cybersecurity": ["Cybersecurity", "Security", "Cyber"],
+    "Semiconductors & Hardware": ["Hardware", "Semiconductors", "Deep Tech",
+                                   "DeepTech"],
+    "AI / Machine Learning": ["AI", "Machine Learning", "Artificial Intelligence",
+                               "ML", "Deep Tech", "DeepTech"],
+    "FinTech": ["FinTech", "Fintech", "Financial Services", "Financial Technology",
+                 "Finance"],
+    "InsurTech": ["InsurTech", "Insurance", "Insurtech", "FinTech", "Fintech"],
+    "Payments & Transaction Processing": ["Payments", "FinTech", "Fintech",
+                                           "Financial Services", "Transaction"],
+    "Wealth Management & Trading": ["Wealth Management", "Trading", "FinTech",
+                                     "Fintech", "Investment"],
+    "HealthTech / Digital Health": ["HealthTech", "Health Tech", "Digital Health",
+                                     "Healthcare", "MedTech", "Health"],
+    "Biotech & Pharmaceuticals": ["Biotech", "Pharmaceuticals", "Life Sciences",
+                                   "BioTech", "Healthcare"],
+    "Medical Devices": ["Medical Devices", "MedTech", "HealthTech", "Healthcare"],
+    "E-Commerce (inventory-based)": ["E-Commerce", "eCommerce", "Retail",
+                                      "Consumer", "D2C"],
+    "Consumer Marketplace (asset-light)": ["Marketplace", "Consumer",
+                                            "E-Commerce", "Platform"],
+    "Consumer Apps & Social": ["Consumer", "Social", "Mobile", "Apps",
+                                "Consumer Tech"],
+    "Consumer Goods & FMCG": ["Consumer", "FMCG", "Consumer Goods", "Retail"],
+    "Food & Beverage": ["Food & Beverage", "FoodTech", "Consumer", "FMCG"],
+    "DeepTech & Advanced Manufacturing": ["DeepTech", "Deep Tech", "Hardware",
+                                           "Manufacturing", "Industrial"],
+    "CleanTech & Renewable Energy": ["CleanTech", "Clean Tech", "GreenTech",
+                                      "Energy", "Sustainability", "Climate"],
+    "Logistics & Supply Chain": ["Logistics", "Supply Chain", "Transport",
+                                  "Delivery"],
+    "Aerospace & Defence": ["Aerospace", "Defence", "Defense", "Deep Tech",
+                             "DeepTech"],
+    "EdTech": ["EdTech", "Education", "Ed Tech", "Learning"],
+    "PropTech & Real Estate": ["PropTech", "Property", "Real Estate",
+                                "Prop Tech"],
+    "Media & Entertainment": ["Media", "Entertainment", "Content", "Publishing"],
+    "Telecoms": ["Telecoms", "Telecommunications", "Telecom"],
+    "Energy (Oil, Gas, Mining)": ["Energy", "Oil & Gas", "Mining", "Resources"],
+    "Retail (Physical)": ["Retail", "Consumer", "High Street"],
+    "Professional Services": ["Professional Services", "Consulting", "Services"],
+    "Other": [],
+}
+
+
+def get_sector_aliases(sector: str) -> list:
+    aliases = SECTOR_NAME_MAP.get(sector, [])
+    if sector not in aliases:
+        aliases = [sector] + aliases
+    return [s.lower().strip() for s in aliases]
+
+
 ADJACENCY = {
     "fintech":       ["saas", "marketplace"],
     "saas":          ["fintech", "cybersecurity", "deeptech"],
@@ -43,11 +100,16 @@ def _sector_score(investor_sectors: str, company_sector: str,
                   sector_count: int) -> tuple[int, str]:
     if pd.isna(investor_sectors):
         return 8, "Sector coverage unknown"
-    sectors = [s.strip().lower() for s in str(investor_sectors).split(",")]
-    cs = company_sector.lower()
+    vc_sectors = [s.strip().lower() for s in str(investor_sectors).split(",")]
+    user_aliases = get_sector_aliases(company_sector)
 
-    if cs in sectors:
-        n = max(1, int(sector_count) if not pd.isna(sector_count) else len(sectors))
+    sector_fit = any(
+        any(alias in vc_s or vc_s in alias for alias in user_aliases)
+        for vc_s in vc_sectors
+    )
+
+    if sector_fit:
+        n = max(1, int(sector_count) if not pd.isna(sector_count) else len(vc_sectors))
         if n == 1:
             s_score, s_rat = 35, "Primary sector specialist"
         elif n == 2:
@@ -59,19 +121,23 @@ def _sector_score(investor_sectors: str, company_sector: str,
         else:
             s_score, s_rat = 12, f"One of {n} sectors covered — broad generalist fund"
 
-        # Position penalty: sector listed later in investor's sector list gets reduced score
-        sectors_list = [s.strip().lower() for s in str(investor_sectors).split(",")]
-        if cs in sectors_list:
-            pos = sectors_list.index(cs)
-            if pos == 1:
-                s_score = int(s_score * 0.85)
-            elif pos >= 2:
-                s_score = int(s_score * 0.70)
+        # Position penalty: sector listed later gets reduced score
+        sector_position = -1
+        for i, vc_s in enumerate(vc_sectors):
+            if any(alias in vc_s or vc_s in alias for alias in user_aliases):
+                sector_position = i
+                break
+        if sector_position == 1:
+            s_score = int(s_score * 0.85)
+        elif sector_position >= 2:
+            s_score = int(s_score * 0.70)
 
         return s_score, s_rat
 
-    for adj in ADJACENCY.get(cs, []):
-        if adj in sectors:
+    # Adjacency fallback using legacy short names
+    cs_short = company_sector.lower().split("/")[0].strip().split("(")[0].strip()
+    for adj in ADJACENCY.get(cs_short, []):
+        if any(adj in vc_s or vc_s in adj for vc_s in vc_sectors):
             return 8, f"Adjacent sector investor — {company_sector} not primary focus"
 
     return 0, "No sector overlap identified"

@@ -938,18 +938,11 @@ def render_home() -> None:
 
     with card3:
         with st.container(border=True):
-            _col_lbl, _col_icon = st.columns([8, 1])
-            with _col_lbl:
-                st.markdown(
-                    "<p style='font-size:11px;letter-spacing:0.1em;text-transform:uppercase;"
-                    "color:#64748B;margin:0 0 8px;'>Capital position</p>",
-                    unsafe_allow_html=True,
-                )
-            with _col_icon:
-                st.button(
-                    "!",
-                    key="disclaimer_btn",
-                )
+            st.markdown(
+                "<p style='font-size:11px;letter-spacing:0.1em;text-transform:uppercase;"
+                "color:#64748B;margin:0 0 8px;'>Capital position</p>",
+                unsafe_allow_html=True,
+            )
             geography = st.selectbox("Geography",
                 ["UK", "Europe", "US", "Asia", "Global", "MENA", "LatAm"],
                 key="inp_geo",
@@ -1057,6 +1050,11 @@ def render_home() -> None:
                 import time; time.sleep(0.6)
             st.session_state.page = "results"
             st.session_state.active_tab = "Valuation"
+            st.markdown("""<script>
+window.scrollTo(0, 0);
+document.documentElement.scrollTop = 0;
+document.body.scrollTop = 0;
+</script>""", unsafe_allow_html=True)
             st.rerun()
 
     st.markdown(
@@ -1070,6 +1068,12 @@ def render_home() -> None:
 # RESULTS PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 def render_results() -> None:
+    st.markdown("""<script>
+setTimeout(function() {
+    window.scrollTo({top: 0, behavior: 'instant'});
+    document.documentElement.scrollTop = 0;
+}, 50);
+</script>""", unsafe_allow_html=True)
     company = st.session_state.inp_company
 
     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
@@ -1125,7 +1129,7 @@ def render_results() -> None:
         growth_pct=_growth_pct,
     )
     _blend = blended_valuation(_dcf, _comps)
-    _runway = int(_cash / _burn) if _burn > 0 else 999
+    _runway = int(_cash / _burn) if _burn > 0 else None
 
     # ── Layout: sidebar + main ──
     nav_col, main_col = st.columns([1.3, 5], gap="large")
@@ -1443,36 +1447,39 @@ def render_results() -> None:
                 f"Runway, raise sizing, and readiness · {company}"
             )
 
-            gauge_color = RED if _runway < 12 else GREEN if _runway >= 18 else AMBER
-            fig_gauge = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=_runway,
-                domain={"x": [0, 1], "y": [0, 1]},
-                title={"text": "Runway (months)", "font": {"color": "#64748B", "size": 13}},
-                gauge={
-                    "axis": {"range": [0, 36], "tickcolor": "#94A3B8",
-                             "tickfont": {"color": "#94A3B8"}},
-                    "bar": {"color": gauge_color},
-                    "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
-                    "steps": [
-                        {"range": [0, 12],  "color": "#FEE2E2"},
-                        {"range": [12, 18], "color": "#FEF3C7"},
-                        {"range": [18, 36], "color": "#D1FAE5"},
-                    ],
-                    "threshold": {"line": {"color": BLUE, "width": 3}, "value": 18},
-                },
-                number={"font": {"color": gauge_color, "size": 48}},
-            ))
-            fig_gauge.update_layout(
-                paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
-                font=dict(color="#0F172A"), height=260,
-                margin=dict(l=20, r=20, t=40, b=20),
-            )
-            st.plotly_chart(fig_gauge, use_container_width=True)
+            if _runway is None:
+                st.info("Runway: Not applicable — no monthly burn entered.")
+            else:
+                gauge_color = RED if _runway < 12 else GREEN if _runway >= 18 else AMBER
+                fig_gauge = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=_runway,
+                    domain={"x": [0, 1], "y": [0, 1]},
+                    title={"text": "Runway (months)", "font": {"color": "#64748B", "size": 13}},
+                    gauge={
+                        "axis": {"range": [0, 36], "tickcolor": "#94A3B8",
+                                 "tickfont": {"color": "#94A3B8"}},
+                        "bar": {"color": gauge_color},
+                        "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
+                        "steps": [
+                            {"range": [0, 12],  "color": "#FEE2E2"},
+                            {"range": [12, 18], "color": "#FEF3C7"},
+                            {"range": [18, 36], "color": "#D1FAE5"},
+                        ],
+                        "threshold": {"line": {"color": BLUE, "width": 3}, "value": 18},
+                    },
+                    number={"font": {"color": gauge_color, "size": 48}},
+                ))
+                fig_gauge.update_layout(
+                    paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+                    font=dict(color="#0F172A"), height=260,
+                    margin=dict(l=20, r=20, t=40, b=20),
+                )
+                st.plotly_chart(fig_gauge, use_container_width=True)
 
             st.markdown("<hr/>", unsafe_allow_html=True)
 
-            _recommended = _burn * 18
+            _recommended = _burn * 18 if _burn > 0 else _blend["base"] * 0.15
             _dilution     = 0.20 if _stage == "Seed" else 0.15 if _stage == "Series A" else 0.12
             _post_money   = _blend["base"] + _recommended
 
@@ -1523,38 +1530,42 @@ def render_results() -> None:
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("Cash runway bridge")
 
-            _mo = list(range(0, min(_runway + 1, 37)))
-            _cv = [max(_cash - _burn * m, 0) for m in _mo]
-            fig_burn = go.Figure()
-            fig_burn.add_trace(go.Scatter(
-                x=_mo, y=[c/1e6 for c in _cv],
-                fill="tozeroy", mode="lines",
-                line=dict(color=BLUE, width=2),
-                fillcolor="rgba(29,78,216,0.07)",
-                name="Cash (£m)",
-            ))
-            if 12 <= _runway:
-                fig_burn.add_vline(x=12, line_dash="dot", line_color=RED,
-                                   annotation_text="12-month warning",
-                                   annotation_font_color=RED)
-            if _runway < 36:
-                fig_burn.add_vline(x=_runway, line_dash="dash", line_color=AMBER,
-                                   annotation_text=f"Zero cash (M{_runway})",
-                                   annotation_font_color=AMBER)
-            fig_burn.update_layout(
-                title="Cash balance over time (£m)",
-                xaxis=dict(title="Month", **AXIS_CLEAN),
-                yaxis=dict(title="£m", **AXIS_CLEAN),
-                legend=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0"),
-                margin=dict(l=0, r=0, t=30, b=0),
-                **{k: v for k, v in PLOTLY_BASE.items() if k not in ("margin", "legend", "showlegend")},
-            )
-            st.plotly_chart(fig_burn, use_container_width=True)
+            if _burn > 0 and _runway is not None:
+                _mo = list(range(0, min(_runway + 1, 37)))
+                _cv = [max(_cash - _burn * m, 0) for m in _mo]
+                fig_burn = go.Figure()
+                fig_burn.add_trace(go.Scatter(
+                    x=_mo, y=[c/1e6 for c in _cv],
+                    fill="tozeroy", mode="lines",
+                    line=dict(color=BLUE, width=2),
+                    fillcolor="rgba(29,78,216,0.07)",
+                    name="Cash (£m)",
+                ))
+                if 12 <= _runway:
+                    fig_burn.add_vline(x=12, line_dash="dot", line_color=RED,
+                                       annotation_text="12-month warning",
+                                       annotation_font_color=RED)
+                if _runway < 36:
+                    fig_burn.add_vline(x=_runway, line_dash="dash", line_color=AMBER,
+                                       annotation_text=f"Zero cash (M{_runway})",
+                                       annotation_font_color=AMBER)
+                fig_burn.update_layout(
+                    title="Cash balance over time (£m)",
+                    xaxis=dict(title="Month", **AXIS_CLEAN),
+                    yaxis=dict(title="£m", **AXIS_CLEAN),
+                    legend=dict(bgcolor="#FFFFFF", bordercolor="#E2E8F0"),
+                    margin=dict(l=0, r=0, t=30, b=0),
+                    **{k: v for k, v in PLOTLY_BASE.items() if k not in ("margin", "legend", "showlegend")},
+                )
+                st.plotly_chart(fig_burn, use_container_width=True)
 
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("Fundraising readiness checklist")
             _tips = [
-                ("Runway",            _runway >= 18, f"{_runway} months remaining" if _runway >= 18 else f"Only {_runway} months — raise urgently"),
+                ("Runway",            _runway is not None and _runway >= 18,
+                 f"{_runway} months remaining" if (_runway is not None and _runway >= 18)
+                 else ("Not applicable — no burn entered" if _runway is None
+                       else f"Only {_runway} months — raise urgently")),
                 ("Revenue traction",  _revenue > 0,  fmt_gbp(_revenue) + " ARR"),
                 ("Growth rate",       _growth_pct >= 50, f"{_growth_pct}% YoY growth"),
                 ("EBITDA visibility", _ebitda_margin >= 0, f"{_ebitda_margin}% margin"),
