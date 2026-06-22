@@ -1162,10 +1162,19 @@ def render_home() -> None:
 def render_results() -> None:
     st.markdown('<div id="results-top"></div>', unsafe_allow_html=True)
     if st.session_state.pop("scroll_to_top", False):
-        components.html(
-            "<script>window.parent.document.querySelector('section.main').scrollTo(0, 0);</script>",
-            height=0,
-        )
+        components.html("""
+<script>
+(function() {
+    function scrollUp() {
+        var el = window.parent.document.querySelector('section.main');
+        if (el) { el.scrollTop = 0; el.scrollTo(0, 0); }
+        window.parent.scrollTo(0, 0);
+    }
+    scrollUp();
+    setTimeout(scrollUp, 100);
+    setTimeout(scrollUp, 300);
+})();
+</script>""", height=0, scrolling=False)
     # ── Read snapshotted values (set by Run analysis / demo buttons) ──────────
     # _run_ keys are written at the moment the user clicks Run or a demo button,
     # capturing the actual widget state. inp_ keys are the fallback for first load.
@@ -1494,12 +1503,12 @@ def render_results() -> None:
                 _fcfs = _detail.get("fcfs", [])
                 _pv_fcfs = _detail.get("pv_fcfs_sum", 0)
                 _pv_tv = _detail.get("terminal_value_pv", 0)
-                _ev_base = _dcf.get("base", 0)
 
                 _tax_hit = _np1 - _eb1
                 _capex_nwc = (_fcfs[0] if _fcfs else 0) - _np1
 
                 _ev_base    = _pv_fcfs + _pv_tv
+                _wf_x       = ["Revenue (Y1)", "EBITDA margin", "Tax (NOPAT)", "CapEx + NWC", "PV of FCFs", "Terminal value", "Enterprise value"]
                 _wf_y       = [_rv1, _eb1 - _rv1, _tax_hit, _capex_nwc, _pv_fcfs, _pv_tv, _ev_base]
                 _wf_measure = ["relative", "relative", "relative", "relative", "absolute", "relative", "total"]
 
