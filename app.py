@@ -694,6 +694,7 @@ def _load_preset(name: str) -> None:
     st.session_state["inp_sector"] = presets[name].get("sector_select", "FinTech")
     st.session_state.pop("blended_base_ev", None)
     st.session_state.pop("defaults_initialised", None)
+    st.session_state["_preset_loaded"] = True
     st.session_state["page"] = "home"
 
 
@@ -922,6 +923,8 @@ def render_topnav(company: str = "") -> None:
 # HOME PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 def _on_sector_change():
+    if st.session_state.pop("_preset_loaded", False):
+        return  # Skip overwriting — preset values take priority
     new_sector = st.session_state["sector_select"]
     d = SECTOR_DEFAULTS.get(new_sector, SECTOR_DEFAULTS["Other"])
     # Delete numeric widget keys before setting new values so widgets reinitialise
