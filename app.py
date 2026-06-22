@@ -623,6 +623,37 @@ def _nav_btn(label: str, is_active: bool, key: str) -> bool:
 
 
 # ── Preset callbacks ──────────────────────────────────────────────────────────
+_WIDGET_KEYS = [
+    "inp_company", "inp_revenue", "inp_growth", "inp_ebitda",
+    "inp_cash", "inp_burn", "inp_tax", "inp_capex",
+    "inp_target_margin", "inp_terminal_growth",
+    "inp_ev_rev_multiple", "inp_rfr", "inp_erp",
+    "inp_wacc_debt", "inp_custom_wacc",
+    "sector_select", "inp_stage", "inp_geo",
+]
+
+def _snapshot_run_keys() -> None:
+    """Copy current widget values into _run_ keys so results page reads them correctly."""
+    ss = st.session_state
+    ss["_run_revenue"]        = float(ss.get("inp_revenue",        4_000_000))
+    ss["_run_growth"]         = float(ss.get("inp_growth",                70))
+    ss["_run_ebitda"]         = float(ss.get("inp_ebitda",               10))
+    ss["_run_cash"]           = float(ss.get("inp_cash",          1_500_000))
+    ss["_run_burn"]           = float(ss.get("inp_burn",             200_000))
+    ss["_run_sector"]         = str(ss.get("sector_select",
+                                    ss.get("inp_sector", "FinTech")))
+    ss["_run_stage"]          = str(ss.get("inp_stage",          "Series A"))
+    ss["_run_geo"]            = str(ss.get("inp_geo",                   "UK"))
+    ss["_run_tax"]            = float(ss.get("inp_tax",                   25))
+    ss["_run_capex"]          = float(ss.get("inp_capex",                  5))
+    ss["_run_target_margin"]  = float(ss.get("inp_target_margin",         25))
+    ss["_run_terminal_growth"]= float(ss.get("inp_terminal_growth",      3.0))
+    ss["_run_ev_multiple"]    = float(ss.get("inp_ev_rev_multiple",      7.0))
+    ss["_run_rfr"]            = float(ss.get("inp_rfr",                  4.2))
+    ss["_run_erp"]            = float(ss.get("inp_erp",                  5.5))
+    ss["_run_wacc_debt"]      = float(ss.get("inp_wacc_debt",              0))
+    ss["_run_name"]           = str(ss.get("inp_company",                 ""))
+
 def _load_preset(name: str) -> None:
     presets = {
         "Wise": dict(
@@ -653,11 +684,18 @@ def _load_preset(name: str) -> None:
             inp_wacc_debt=0,
         ),
     }
+    # Delete widget keys first so Streamlit reinitialises them from new values
+    for k in _WIDGET_KEYS:
+        st.session_state.pop(k, None)
     for k, v in presets[name].items():
         st.session_state[k] = v
     st.session_state["inp_stage"] = "Growth"
-    # Keep inp_sector in sync with sector_select
-    st.session_state["inp_sector"] = st.session_state.get("sector_select", "FinTech")
+    st.session_state["inp_sector"] = presets[name].get("sector_select", "FinTech")
+    # Snapshot into _run_ keys so results page reads correct values immediately
+    _snapshot_run_keys()
+    st.session_state.pop("blended_base_ev", None)
+    st.session_state.pop("defaults_initialised", None)
+    st.session_state["page"] = "results"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -887,6 +925,11 @@ def render_topnav(company: str = "") -> None:
 def _on_sector_change():
     new_sector = st.session_state["sector_select"]
     d = SECTOR_DEFAULTS.get(new_sector, SECTOR_DEFAULTS["Other"])
+    # Delete numeric widget keys before setting new values so widgets reinitialise
+    for k in ["inp_revenue", "inp_growth", "inp_ebitda", "inp_cash", "inp_burn",
+              "inp_tax", "inp_capex", "inp_target_margin", "inp_terminal_growth",
+              "inp_rfr", "inp_erp", "inp_ev_rev_multiple"]:
+        st.session_state.pop(k, None)
     st.session_state["inp_revenue"]         = d["revenue"]
     st.session_state["inp_growth"]          = d["growth"]
     st.session_state["inp_ebitda"]          = d["ebitda"]
@@ -902,6 +945,7 @@ def _on_sector_change():
     st.session_state["inp_ev_rev_multiple"] = float(
         SECTOR_MULTIPLES.get(new_sector, SECTOR_MULTIPLES["Other"])["base"]
     )
+    st.session_state.pop("blended_base_ev", None)
 
 
 def render_home() -> None:
@@ -944,7 +988,7 @@ def render_home() -> None:
                         unsafe_allow_html=True)
             if st.button(name, key=f"demo_{name}", use_container_width=True):
                 _load_preset(name)
-                st.rerun()
+                st.rerun()  # _load_preset sets page="results"
 
     st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
@@ -1099,13 +1143,10 @@ def render_home() -> None:
         if st.button("Run analysis", key="run_analysis_btn", use_container_width=True):
             with st.spinner("Running valuation models..."):
                 import time; time.sleep(0.6)
-            st.session_state.page = "results"
-            st.session_state.active_tab = "Valuation"
-            st.markdown("""<script>
-window.scrollTo(0, 0);
-document.documentElement.scrollTop = 0;
-document.body.scrollTop = 0;
-</script>""", unsafe_allow_html=True)
+            _snapshot_run_keys()
+            st.session_state.pop("blended_base_ev", None)
+            st.session_state["page"] = "results"
+            st.session_state["active_tab"] = "Valuation"
             st.rerun()
 
     st.markdown(
@@ -1125,53 +1166,68 @@ setTimeout(function() {
     document.documentElement.scrollTop = 0;
 }, 50);
 </script>""", unsafe_allow_html=True)
-    company = st.session_state.inp_company
+    # ── Read snapshotted values (set by Run analysis / demo buttons) ──────────
+    # _run_ keys are written at the moment the user clicks Run or a demo button,
+    # capturing the actual widget state. inp_ keys are the fallback for first load.
+    ss = st.session_state
+    def _r(run_key, inp_key, default):
+        return ss.get(run_key, ss.get(inp_key, default))
+
+    _revenue       = float(_r("_run_revenue",        "inp_revenue",        4_000_000))
+    _growth_pct    = float(_r("_run_growth",         "inp_growth",                70))
+    _ebitda_margin = float(_r("_run_ebitda",         "inp_ebitda",               10))
+    _cash          = float(_r("_run_cash",           "inp_cash",          1_500_000))
+    _burn          = float(_r("_run_burn",           "inp_burn",            200_000))
+    _sector        = str(_r("_run_sector",           "sector_select",       "FinTech"))
+    _stage         = str(_r("_run_stage",            "inp_stage",         "Series A"))
+    _geography     = str(_r("_run_geo",              "inp_geo",                  "UK"))
+    _name          = str(_r("_run_name",             "inp_company",               ""))
+    _tax           = float(_r("_run_tax",            "inp_tax",                   25))
+    _capex         = float(_r("_run_capex",          "inp_capex",                  5))
+    _target_margin = float(_r("_run_target_margin",  "inp_target_margin",         25))
+    _terminal_g    = float(_r("_run_terminal_growth","inp_terminal_growth",       3.0))
+    _ev_multiple   = float(_r("_run_ev_multiple",    "inp_ev_rev_multiple",       7.0))
+    _rfr           = float(_r("_run_rfr",            "inp_rfr",                   4.2))
+    _erp           = float(_r("_run_erp",            "inp_erp",                   5.5))
+    _wacc_debt     = float(_r("_run_wacc_debt",      "inp_wacc_debt",               0))
+
+    company        = _name or ss.get("inp_company", "Your company")
+    _total_debt    = ss.get("inp_debt", 0)
+    _cod           = ss.get("inp_cod", 8)
+    _openai_key    = ss.get("inp_openai", "")
 
     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
-    # ── Compute valuations from session state ──
-    _revenue       = st.session_state.inp_revenue
-    _growth_pct    = st.session_state.inp_growth
-    _ebitda_margin = st.session_state.inp_ebitda
-    _stage         = st.session_state.inp_stage
-    _sector        = st.session_state.get("sector_select") or st.session_state.get("inp_sector", "FinTech")
-    _geography     = st.session_state.inp_geo
-    _cash          = st.session_state.inp_cash
-    _burn          = st.session_state.inp_burn
-    _total_debt    = st.session_state.inp_debt
-    _cod           = st.session_state.inp_cod
-    _openai_key    = st.session_state.inp_openai
-
-    _beta_source_val = st.session_state.get("inp_beta_source", "Use sector average (recommended)")
+    _beta_source_val = ss.get("inp_beta_source", "Use sector average (recommended)")
     if _beta_source_val == "Use sector average (recommended)":
         _beta_val = SECTOR_BETAS.get(_sector, 1.20)
     else:
         _beta_val = None
-    _tv_label  = st.session_state.get("inp_tv_method", "Gordon Growth Model")
+    _tv_label  = ss.get("inp_tv_method", "Gordon Growth Model")
     _tv_method = "exit_multiple" if _tv_label == "Exit Multiple (EV/EBITDA)" else "gordon_growth"
-    _exit_mult = float(st.session_state.get("inp_exit_multiple", 12.0)) if _tv_method == "exit_multiple" else None
-    _projection_years_val = int(st.session_state.get("inp_projection_years", 5))
+    _exit_mult = float(ss.get("inp_exit_multiple", 12.0)) if _tv_method == "exit_multiple" else None
+    _projection_years_val = int(ss.get("inp_projection_years", 5))
     _inputs = _NS(
         stage=_stage,
-        tax_rate_pct=float(st.session_state.get("inp_tax", 25)),
-        capex_pct_of_ebitda=float(st.session_state.get("inp_capex", 5)),
+        tax_rate_pct=_tax,
+        capex_pct_of_ebitda=_capex,
         nwc_pct_of_ebitda=3.0,
         da_pct_of_revenue=3.0,
-        target_ebitda_margin_pct=float(st.session_state.get("inp_target_margin", 25)),
-        terminal_growth_rate_pct=float(st.session_state.get("inp_terminal_growth", 3.0)),
+        target_ebitda_margin_pct=_target_margin,
+        terminal_growth_rate_pct=_terminal_g,
         terminal_value_method=_tv_method,
         exit_multiple_ebitda=_exit_mult,
-        use_custom_wacc=bool(st.session_state.get("inp_use_custom_wacc", False)),
-        custom_wacc_pct=float(st.session_state.get("inp_custom_wacc", 28.0)),
-        risk_free_rate_pct=float(st.session_state.get("inp_rfr", 4.2)),
-        equity_risk_premium_pct=float(st.session_state.get("inp_erp", 5.5)),
+        use_custom_wacc=bool(ss.get("inp_use_custom_wacc", False)),
+        custom_wacc_pct=float(ss.get("inp_custom_wacc", 28.0)),
+        risk_free_rate_pct=_rfr,
+        equity_risk_premium_pct=_erp,
         beta=float(_beta_val) if _beta_val is not None else None,
-        cost_of_debt_pct=float(st.session_state.get("inp_wacc_kd", 8.0)),
-        debt_gbp=float(st.session_state.get("inp_wacc_debt", 0)),
-        total_debt_gbp=float(st.session_state.get("inp_wacc_debt", 0)),
+        cost_of_debt_pct=float(ss.get("inp_wacc_kd", 8.0)),
+        debt_gbp=_wacc_debt,
+        total_debt_gbp=_wacc_debt,
         equity_gbp=None,
         projection_years=_projection_years_val,
-        custom_ev_rev_multiple=float(st.session_state.get("inp_ev_rev_multiple", 0)) or None,
+        custom_ev_rev_multiple=_ev_multiple or None,
     )
     _dcf   = dcf_valuation(_revenue, _growth_pct, _ebitda_margin, _inputs)
     _comps = comparable_valuation(
@@ -1499,16 +1555,14 @@ setTimeout(function() {
                 f"Runway, raise sizing, and readiness · {company}"
             )
 
-            # ── Fundraising: read all inputs directly from session state ──────
-            _f_cash   = float(st.session_state.get("inp_cash",    1_500_000))
-            _f_burn   = float(st.session_state.get("inp_burn",      200_000))
-            _f_rev    = float(st.session_state.get("inp_revenue", 4_000_000))
-            _f_growth = float(st.session_state.get("inp_growth",          70))
-            _f_ebitda = float(st.session_state.get("inp_ebitda",          10))
-            _f_stage  = str(st.session_state.get(
-                "stage_select", st.session_state.get("inp_stage", "Series A")))
-            _f_sector = str(st.session_state.get(
-                "sector_select", st.session_state.get("inp_sector", "FinTech")))
+            # ── Fundraising: use the snapshotted values from render_results() ──
+            _f_cash   = _cash
+            _f_burn   = _burn
+            _f_rev    = _revenue
+            _f_growth = _growth_pct
+            _f_ebitda = _ebitda_margin
+            _f_stage  = _stage
+            _f_sector = _sector
 
             # ── Runway ───────────────────────────────────────────────────────
             if _f_burn > 0 and _f_cash > 0:
