@@ -695,6 +695,7 @@ def _load_preset(name: str) -> None:
     _snapshot_run_keys()
     st.session_state.pop("blended_base_ev", None)
     st.session_state.pop("defaults_initialised", None)
+    st.session_state["active_tab"] = "Valuation"
     st.session_state["page"] = "results"
 
 
@@ -1145,8 +1146,13 @@ def render_home() -> None:
                 import time; time.sleep(0.6)
             _snapshot_run_keys()
             st.session_state.pop("blended_base_ev", None)
-            st.session_state["page"] = "results"
             st.session_state["active_tab"] = "Valuation"
+            st.session_state["page"] = "results"
+            st.markdown("""<script>
+window.scrollTo({top:0,behavior:'instant'});
+document.documentElement.scrollTop=0;
+document.body.scrollTop=0;
+</script>""", unsafe_allow_html=True)
             st.rerun()
 
     st.markdown(
