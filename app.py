@@ -681,51 +681,95 @@ def render_landing() -> None:
     with _m:
         # ── Section A: Hero ───────────────────────────────────────────────────
         st.markdown("""
-<div class='landing-hero'>
-  <div class='landing-logo'>
-    <div style='width:40px;height:40px;background:#00D4AA;border-radius:10px;
-      display:inline-flex;align-items:center;justify-content:center;'>
-      <svg width='22' height='22' viewBox='0 0 22 22' fill='none'>
-        <polyline points='3,16 8,10 12,13 19,5' stroke='#0A0F1E' stroke-width='2.2'
-          stroke-linecap='round' stroke-linejoin='round'/>
-        <polyline points='15,5 19,5 19,9' stroke='#0A0F1E' stroke-width='2.2'
-          stroke-linecap='round' stroke-linejoin='round'/>
-      </svg>
+<div style="text-align: center; padding: 60px 20px 20px;">
+    <div style="display: inline-flex; align-items: center; gap: 10px;
+                margin-bottom: 32px;">
+        <div style="width: 44px; height: 44px; background: #00D4AA;
+                    border-radius: 10px; display: flex; align-items: center;
+                    justify-content: center;">
+            <svg width="24" height="18" viewBox="0 0 24 18" fill="none">
+                <polyline points="1,15 7,9 11,12 17,4 23,2"
+                          stroke="#0A0F1E" stroke-width="2.5"
+                          stroke-linecap="round" stroke-linejoin="round"
+                          fill="none"/>
+                <circle cx="23" cy="2" r="2" fill="#0A0F1E"/>
+            </svg>
+        </div>
+        <span style="font-size: 22px; font-weight: 500; color: #0F172A;
+                     letter-spacing: -0.02em;">Runrate</span>
+        <span style="font-size: 11px; color: #94A3B8; letter-spacing: 0.08em;
+                     text-transform: uppercase;">Deal intelligence</span>
     </div>
-    <span style='font-size:22px;font-weight:600;color:#0A0F1E;'>Runrate</span>
-  </div>
-  <h1 class='landing-h1'>Institutional deal analysis.<br><span class='accent'>In 30 seconds.</span></h1>
-  <p class='landing-sub'>Runrate turns seven numbers into a full valuation, investor shortlist, and outreach plan — the analysis a junior banker would take a week to produce.</p>
-  <p class='landing-microcopy'>Built for founders and CFOs raising their next round.</p>
+    <div style="font-size: 48px; font-weight: 600; color: #0F172A;
+                letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 16px;">
+        Institutional deal analysis.<br>
+        <span style="color: #00D4AA;">In 30 seconds.</span>
+    </div>
+    <div style="font-size: 18px; color: #475569; max-width: 560px;
+                margin: 0 auto 12px; line-height: 1.5;">
+        Runrate turns seven numbers into a full valuation, investor
+        shortlist, and outreach plan — the analysis a junior banker
+        would take a week to produce.
+    </div>
+    <div style="font-size: 14px; color: #94A3B8; margin-bottom: 32px;">
+        Built for founders and CFOs raising their next round.
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
-        _, _btn_col, _ = st.columns([1, 2, 1])
-        with _btn_col:
-            if st.button("Start your analysis →", use_container_width=True, type="primary", key="landing_cta_top"):
+        _, btn_col, _ = st.columns([1, 2, 1])
+        with btn_col:
+            if st.button("Start your analysis →",
+                         use_container_width=True,
+                         type="primary",
+                         key="hero_cta"):
                 st.session_state.page = "home"
                 st.rerun()
 
-        st.markdown("<div style='text-align:center;margin-top:8px;'>", unsafe_allow_html=True)
-        st.caption("No sign-up. No API key. Free.")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown("<div style='height:40px;'></div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div style='text-align:center; margin-top:8px;'>"
+            "<span style='font-size:13px; color:#94A3B8;'>"
+            "No sign-up. No API key. Free.</span></div>",
+            unsafe_allow_html=True,
+        )
 
         # ── Section B: Trust stats ────────────────────────────────────────────
-        _s1, _s2, _s3 = st.columns(3)
-        with _s1:
-            st.markdown("<div style='text-align:center;'><p class='stat-num'>30s</p><p class='stat-label'>From inputs to full analysis</p></div>", unsafe_allow_html=True)
-        with _s2:
-            st.markdown("<div style='text-align:center;'><p class='stat-num'>29</p><p class='stat-label'>Sectors with calibrated benchmarks</p></div>", unsafe_allow_html=True)
-        with _s3:
-            st.markdown("<div style='text-align:center;'><p class='stat-num'>70+</p><p class='stat-label'>VCs scored on specialist fit</p></div>", unsafe_allow_html=True)
-
-        st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True)
+        st.markdown("""
+<div style="display: flex; justify-content: center; gap: 48px;
+            padding: 32px 0; border-top: 0.5px solid #E2E8F0;
+            border-bottom: 0.5px solid #E2E8F0; margin: 24px 0;">
+    <div style="text-align: center;">
+        <div style="font-size: 36px; font-weight: 600; color: #00D4AA;
+                    letter-spacing: -0.02em;">30s</div>
+        <div style="font-size: 12px; color: #64748B; margin-top: 4px;
+                    text-transform: uppercase; letter-spacing: 0.06em;">
+            Full analysis</div>
+    </div>
+    <div style="text-align: center;">
+        <div style="font-size: 36px; font-weight: 600; color: #00D4AA;
+                    letter-spacing: -0.02em;">29</div>
+        <div style="font-size: 12px; color: #64748B; margin-top: 4px;
+                    text-transform: uppercase; letter-spacing: 0.06em;">
+            Sectors</div>
+    </div>
+    <div style="text-align: center;">
+        <div style="font-size: 36px; font-weight: 600; color: #00D4AA;
+                    letter-spacing: -0.02em;">70+</div>
+        <div style="font-size: 12px; color: #64748B; margin-top: 4px;
+                    text-transform: uppercase; letter-spacing: 0.06em;">
+            VCs scored</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
         # ── Section C: Feature grid ───────────────────────────────────────────
-        st.markdown("### What Runrate delivers")
-        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+        st.markdown("""
+<div style="text-align: center; margin: 8px 0 20px;">
+    <span style="font-size: 11px; letter-spacing: 0.12em;
+                 text-transform: uppercase; color: #64748B;">
+        What Runrate delivers</span>
+</div>
+""", unsafe_allow_html=True)
 
         _features = [
             ("📊", "Valuation", "Blended DCF and comparables across three scenarios, with a full value bridge and sensitivity table."),
@@ -794,13 +838,7 @@ def render_landing() -> None:
 
         st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True)
 
-        # ── Section F: Final CTA ──────────────────────────────────────────────
-        _, _fc, _ = st.columns([1, 2, 1])
-        with _fc:
-            if st.button("Start your analysis →", use_container_width=True, type="primary", key="landing_cta_bottom"):
-                st.session_state.page = "home"
-                st.rerun()
-
+        # ── Section F: Footer ─────────────────────────────────────────────────
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
         st.caption("Runrate · Deal intelligence · Built for the Arete Finance Hackathon 2026")
 
