@@ -998,6 +998,21 @@ def render_home() -> None:
         unsafe_allow_html=True,
     )
 
+    # ── Run analysis button (top) ──
+    _t1, _t2, _t3 = st.columns([3, 2, 3])
+    with _t2:
+        if st.button("Run analysis", key="run_analysis_btn_top", use_container_width=True):
+            with st.spinner("Running valuation models..."):
+                import time; time.sleep(0.6)
+            _snapshot_run_keys()
+            st.session_state.pop("blended_base_ev", None)
+            st.session_state["active_tab"] = "Valuation"
+            st.session_state["page"] = "results"
+            st.query_params["scroll"] = "top"
+            st.rerun()
+
+    st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+
     # ── Three input cards ──
     card1, card2, card3 = st.columns(3)
 
