@@ -657,44 +657,85 @@ def _snapshot_run_keys() -> None:
 
 def _load_preset(name: str) -> None:
     presets = {
-        "Wise": dict(
-            inp_company="Wise plc", sector_select="Payments & Transaction Processing",
-            inp_stage="Growth", inp_geo="Global",
-            inp_revenue=1_869_000_000, inp_growth=21, inp_ebitda=29,
-            inp_cash=1_430_000_000, inp_burn=0,
-            inp_tax=25, inp_capex=4, inp_target_margin=32, inp_terminal_growth=3.0,
-            inp_ev_rev_multiple=3.4, inp_rfr=4.2, inp_erp=5.5,
-            inp_wacc_debt=230_000_000,
-        ),
-        "Revolut": dict(
-            inp_company="Revolut", sector_select="FinTech",
-            inp_stage="Growth", inp_geo="Global",
-            inp_revenue=3_100_000_000, inp_growth=72, inp_ebitda=36,
-            inp_cash=2_100_000_000, inp_burn=0,
-            inp_tax=25, inp_capex=3, inp_target_margin=40, inp_terminal_growth=4.0,
-            inp_ev_rev_multiple=11.25, inp_rfr=4.2, inp_erp=5.5,
-            inp_wacc_debt=500_000_000,
-        ),
-        "Darktrace": dict(
-            inp_company="Darktrace", sector_select="Cybersecurity",
-            inp_stage="Growth", inp_geo="Global",
-            inp_revenue=552_000_000, inp_growth=26, inp_ebitda=22,
-            inp_cash=280_000_000, inp_burn=0,
-            inp_tax=25, inp_capex=4, inp_target_margin=28, inp_terminal_growth=3.5,
-            inp_ev_rev_multiple=6.2, inp_rfr=4.2, inp_erp=5.5,
-            inp_wacc_debt=0,
-        ),
+        "Wise": {
+            "inp_company": "Wise plc",
+            "sector_select": "Payments & Transaction Processing",
+            "inp_stage": "Growth",
+            "inp_geo": "Global",
+            "inp_revenue": 1869000000,
+            "inp_growth": 21,
+            "inp_ebitda": 29,
+            "inp_cash": 1430000000,
+            "inp_burn": 0,
+            "inp_ev_rev_multiple": 3.4,
+            "inp_tax": 25,
+            "inp_capex": 4,
+            "inp_target_margin": 25,
+            "inp_terminal_growth": 3.0,
+            "inp_rfr": 4.2,
+            "inp_erp": 5.5,
+            "inp_wacc_kd": 8.0,
+            "inp_wacc_debt": 230000000,
+            "inp_horizon": 5,
+        },
+        "Revolut": {
+            "inp_company": "Revolut",
+            "sector_select": "FinTech",
+            "inp_stage": "Growth",
+            "inp_geo": "Global",
+            "inp_revenue": 3100000000,
+            "inp_growth": 72,
+            "inp_ebitda": 36,
+            "inp_cash": 2100000000,
+            "inp_burn": 0,
+            "inp_ev_rev_multiple": 11.25,
+            "inp_tax": 25,
+            "inp_capex": 4,
+            "inp_target_margin": 25,
+            "inp_terminal_growth": 3.0,
+            "inp_rfr": 4.2,
+            "inp_erp": 5.5,
+            "inp_wacc_kd": 8.0,
+            "inp_wacc_debt": 500000000,
+            "inp_horizon": 5,
+        },
+        "Darktrace": {
+            "inp_company": "Darktrace",
+            "sector_select": "Cybersecurity",
+            "inp_stage": "Growth",
+            "inp_geo": "Global",
+            "inp_revenue": 552000000,
+            "inp_growth": 26,
+            "inp_ebitda": 22,
+            "inp_cash": 280000000,
+            "inp_burn": 0,
+            "inp_ev_rev_multiple": 6.2,
+            "inp_tax": 25,
+            "inp_capex": 4,
+            "inp_target_margin": 25,
+            "inp_terminal_growth": 3.0,
+            "inp_rfr": 4.2,
+            "inp_erp": 5.5,
+            "inp_wacc_kd": 8.0,
+            "inp_wacc_debt": 0,
+            "inp_horizon": 5,
+        },
     }
     # Delete widget keys first so Streamlit reinitialises them from new values
     for k in _WIDGET_KEYS:
         st.session_state.pop(k, None)
+    # First pass
     for k, v in presets[name].items():
         st.session_state[k] = v
     st.session_state["inp_stage"] = "Growth"
     st.session_state["inp_sector"] = presets[name].get("sector_select", "FinTech")
+    st.session_state["_preset_loaded"] = True
+    # Second pass — guarantees sector defaults cannot overwrite preset values
+    for k, v in presets[name].items():
+        st.session_state[k] = v
+    st.session_state["inp_stage"] = "Growth"
     st.session_state.pop("blended_base_ev", None)
     st.session_state.pop("defaults_initialised", None)
-    st.session_state["_preset_loaded"] = True
     st.session_state["page"] = "home"
 
 
