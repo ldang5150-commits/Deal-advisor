@@ -1,4 +1,4 @@
-"""AI Deal Advisor — two-page Streamlit app."""
+"""Runrate — Deal intelligence Streamlit app."""
 
 import streamlit as st
 import pandas as pd
@@ -170,15 +170,15 @@ COMPARABLE_TRANSACTIONS = {
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="AI Deal Advisor",
-    page_icon="D",
+    page_title="Runrate — Deal intelligence",
+    page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 # ── Session state ─────────────────────────────────────────────────────────────
 _DEFAULTS = {
-    "page":         "home",
+    "page":         "landing",
     "active_tab":   "Valuation",
     "inp_company":  "FinTechX",
     "inp_sector":   "FinTech",
@@ -614,6 +614,146 @@ def _load_preset(name: str) -> None:
     st.session_state["inp_sector"] = st.session_state.get("sector_select", "FinTech")
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# LANDING PAGE
+# ══════════════════════════════════════════════════════════════════════════════
+def render_landing() -> None:
+    st.markdown("""
+<style>
+.landing-hero { text-align: center; padding: 80px 20px 40px; }
+.landing-logo { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 40px; }
+.landing-h1 { font-size: 56px; font-weight: 600; color: #0A0F1E; letter-spacing: -0.03em; line-height: 1.05; margin: 0 0 20px; }
+.landing-h1 .accent { color: #00D4AA; }
+.landing-sub { font-size: 20px; color: #475569; max-width: 620px; margin: 0 auto 16px; line-height: 1.5; }
+.landing-microcopy { font-size: 14px; color: #94A3B8; margin-bottom: 36px; }
+.feature-card { background: #FFFFFF; border: 0.5px solid #E2E8F0; border-radius: 14px; padding: 28px 24px; height: 100%; }
+.feature-icon { width: 44px; height: 44px; background: #E0FFF7; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 16px; }
+.feature-title { font-size: 17px; font-weight: 600; color: #0A0F1E; margin: 0 0 8px; }
+.feature-desc { font-size: 14px; color: #64748B; line-height: 1.6; margin: 0; }
+.stat-num { font-size: 40px; font-weight: 600; color: #00D4AA; margin: 0; letter-spacing: -0.02em; }
+.stat-label { font-size: 13px; color: #64748B; margin: 4px 0 0; }
+.how-step { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px; }
+.how-num { width: 32px; height: 32px; background: #0A0F1E; color: #00D4AA; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; flex-shrink: 0; }
+</style>
+""", unsafe_allow_html=True)
+
+    _l, _m, _r = st.columns([1, 6, 1])
+    with _m:
+        # ── Section A: Hero ───────────────────────────────────────────────────
+        st.markdown("""
+<div class='landing-hero'>
+  <div class='landing-logo'>
+    <div style='width:40px;height:40px;background:#00D4AA;border-radius:10px;
+      display:inline-flex;align-items:center;justify-content:center;'>
+      <svg width='22' height='22' viewBox='0 0 22 22' fill='none'>
+        <polyline points='3,16 8,10 12,13 19,5' stroke='#0A0F1E' stroke-width='2.2'
+          stroke-linecap='round' stroke-linejoin='round'/>
+        <polyline points='15,5 19,5 19,9' stroke='#0A0F1E' stroke-width='2.2'
+          stroke-linecap='round' stroke-linejoin='round'/>
+      </svg>
+    </div>
+    <span style='font-size:22px;font-weight:600;color:#0A0F1E;'>Runrate</span>
+  </div>
+  <h1 class='landing-h1'>Institutional deal analysis.<br><span class='accent'>In 30 seconds.</span></h1>
+  <p class='landing-sub'>Runrate turns seven numbers into a full valuation, investor shortlist, and outreach plan — the analysis a junior banker would take a week to produce.</p>
+  <p class='landing-microcopy'>Built for founders and CFOs raising their next round.</p>
+</div>
+""", unsafe_allow_html=True)
+
+        _cl, _cc, _cr = st.columns([1, 1, 1])
+        with _cc:
+            if st.button("Start your analysis", use_container_width=True, type="primary", key="landing_cta_top"):
+                st.session_state.page = "home"
+                st.rerun()
+
+        st.markdown("<div style='text-align:center;margin-top:8px;'>", unsafe_allow_html=True)
+        st.caption("No sign-up. No API key. Free.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:40px;'></div>", unsafe_allow_html=True)
+
+        # ── Section B: Trust stats ────────────────────────────────────────────
+        _s1, _s2, _s3 = st.columns(3)
+        with _s1:
+            st.markdown("<div style='text-align:center;'><p class='stat-num'>30s</p><p class='stat-label'>From inputs to full analysis</p></div>", unsafe_allow_html=True)
+        with _s2:
+            st.markdown("<div style='text-align:center;'><p class='stat-num'>29</p><p class='stat-label'>Sectors with calibrated benchmarks</p></div>", unsafe_allow_html=True)
+        with _s3:
+            st.markdown("<div style='text-align:center;'><p class='stat-num'>70+</p><p class='stat-label'>VCs scored on specialist fit</p></div>", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True)
+
+        # ── Section C: Feature grid ───────────────────────────────────────────
+        st.markdown("### What Runrate delivers")
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+
+        _features = [
+            ("📊", "Valuation", "Blended DCF and comparables across three scenarios, with a full value bridge and sensitivity table."),
+            ("💰", "Fundraising", "Runway, recommended raise, dilution timeline, and sector-specific use of funds."),
+            ("🎯", "VC matching", "Your top investor matches scored on sector, stage, geography, and cheque fit — with warm intro paths."),
+            ("🔍", "Comparable transactions", "Recent M&A deals in your sector and where your valuation sits against them."),
+            ("✉️", "Investor outreach", "Cold email templates pre-filled with your actual metrics, ready to send."),
+        ]
+
+        _row1 = st.columns(3)
+        _row2 = st.columns(2)
+        for _i, (icon, title, desc) in enumerate(_features):
+            _col = _row1[_i] if _i < 3 else _row2[_i - 3]
+            with _col:
+                st.markdown(f"""
+<div class='feature-card'>
+  <div class='feature-icon'>{icon}</div>
+  <p class='feature-title'>{title}</p>
+  <p class='feature-desc'>{desc}</p>
+</div>""", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True)
+
+        # ── Section D: How it works ───────────────────────────────────────────
+        st.markdown("### How it works")
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+
+        _steps = [
+            ("1", "Enter your company", "Revenue, growth, margin, sector, stage. Or load a demo company."),
+            ("2", "Runrate runs the analysis", "DCF, comparables, VC scoring, and outreach — all computed in seconds."),
+            ("3", "Act on the output", "Download your valuation, shortlist investors, and send tailored outreach."),
+        ]
+        for _num, _title, _desc in _steps:
+            st.markdown(f"""
+<div class='how-step'>
+  <div class='how-num'>{_num}</div>
+  <div>
+    <p style='font-size:15px;font-weight:600;color:#0A0F1E;margin:0 0 4px;'>{_title}</p>
+    <p style='font-size:14px;color:#64748B;margin:0;'>{_desc}</p>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:40px;'></div>", unsafe_allow_html=True)
+
+        # ── Section E: Methodology ────────────────────────────────────────────
+        st.markdown("""
+<div style='background:#F0FDF9;border-radius:12px;padding:20px 24px;'>
+  <p style='font-size:14px;color:#0F766E;margin:0;line-height:1.6;'>
+    Built on Damodaran sector benchmarks, standard DCF methodology, and real market transaction data.
+    Every number is explainable — no black box.
+  </p>
+</div>""", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True)
+
+        # ── Section F: Final CTA ──────────────────────────────────────────────
+        _fl, _fc, _fr = st.columns([1, 1, 1])
+        with _fc:
+            if st.button("Start your analysis", use_container_width=True, type="primary", key="landing_cta_bottom"):
+                st.session_state.page = "home"
+                st.rerun()
+
+        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        st.caption("Runrate · Deal intelligence · Built for the Arete Finance Hackathon 2026")
+
+        st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
+
+
 # ── Top nav bar ───────────────────────────────────────────────────────────────
 def render_topnav(company: str = "") -> None:
     breadcrumb = (
@@ -626,11 +766,11 @@ def render_topnav(company: str = "") -> None:
         f"padding:14px 0;margin-bottom:20px;display:flex;"
         f"align-items:center;justify-content:space-between;'>"
         f"<div style='display:flex;align-items:center;gap:0;'>"
-        f"<div style='width:28px;height:28px;background:{BLUE};border-radius:6px;"
+        f"<div style='width:28px;height:28px;background:#00D4AA;border-radius:6px;"
         f"display:inline-flex;align-items:center;justify-content:center;"
-        f"color:#fff;font-size:13px;font-weight:500;margin-right:10px;'>D</div>"
-        f"<span id='nav-app-name' style='font-size:16px;font-weight:500;"
-        f"color:{BLUE};cursor:pointer;'>&nbsp;</span>"
+        f"color:#0A0F1E;font-size:13px;font-weight:700;margin-right:10px;'>R</div>"
+        f"<span id='nav-app-name' style='font-size:16px;font-weight:600;"
+        f"color:#0A0F1E;cursor:pointer;'>&nbsp;</span>"
         f"{breadcrumb}"
         f"</div>"
         f"<span style='font-size:13px;color:#94A3B8;'>Settings</span>"
@@ -640,9 +780,8 @@ def render_topnav(company: str = "") -> None:
     # Functional navigation button — styled via CSS to blend with nav bar
     st.markdown('<div class="topnav-link" style="display:none;"></div>',
                 unsafe_allow_html=True)
-    if st.button("AI Deal Advisor", key="topnav_home_btn"):
-        st.session_state.page = "home"
-        st.session_state.active_tab = "Valuation"
+    if st.button("Runrate", key="topnav_home_btn"):
+        st.session_state.page = "landing"
         st.rerun()
 
 
@@ -1719,7 +1858,9 @@ def render_results() -> None:
 
 
 # ── Page router ───────────────────────────────────────────────────────────────
-if st.session_state.page == "home":
+if st.session_state.page == "landing":
+    render_landing()
+elif st.session_state.page == "home":
     render_home()
 else:
     render_results()
