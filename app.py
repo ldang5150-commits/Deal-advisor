@@ -1485,13 +1485,41 @@ setTimeout(function() {
                 f"Runway, raise sizing, and readiness · {company}"
             )
 
-            if _runway is None:
-                st.info("Runway: Not applicable — no monthly burn entered.")
+            # Direct session state reads — always reflects current inputs
+            runway_cash  = float(st.session_state.get("inp_cash", 0))
+            runway_burn  = float(st.session_state.get("inp_burn", 0))
+            revenue_gbp  = float(st.session_state.get("inp_revenue", 0))
+
+            if runway_burn > 0:
+                runway_months = int(runway_cash / runway_burn)
             else:
-                gauge_color = RED if _runway < 12 else GREEN if _runway >= 18 else AMBER
+                runway_months = None
+
+            if runway_months is None:
+                gauge_color = GREEN
                 fig_gauge = go.Figure(go.Indicator(
                     mode="gauge+number",
-                    value=_runway,
+                    value=36,
+                    domain={"x": [0, 1], "y": [0, 1]},
+                    title={"text": "Runway (months)", "font": {"color": "#64748B", "size": 13}},
+                    gauge={
+                        "axis": {"range": [0, 36], "tickcolor": "#94A3B8",
+                                 "tickfont": {"color": "#94A3B8"}},
+                        "bar": {"color": GREEN},
+                        "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
+                        "steps": [
+                            {"range": [0, 6],  "color": "#FEE2E2"},
+                            {"range": [6, 12], "color": "#FEF3C7"},
+                            {"range": [12, 36], "color": "#D1FAE5"},
+                        ],
+                    },
+                    number={"suffix": " ∞", "font": {"color": GREEN, "size": 48}},
+                ))
+            else:
+                gauge_color = RED if runway_months <= 6 else AMBER if runway_months <= 12 else GREEN
+                fig_gauge = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=runway_months,
                     domain={"x": [0, 1], "y": [0, 1]},
                     title={"text": "Runway (months)", "font": {"color": "#64748B", "size": 13}},
                     gauge={
@@ -1500,24 +1528,28 @@ setTimeout(function() {
                         "bar": {"color": gauge_color},
                         "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
                         "steps": [
-                            {"range": [0, 12],  "color": "#FEE2E2"},
-                            {"range": [12, 18], "color": "#FEF3C7"},
-                            {"range": [18, 36], "color": "#D1FAE5"},
+                            {"range": [0, 6],  "color": "#FEE2E2"},
+                            {"range": [6, 12], "color": "#FEF3C7"},
+                            {"range": [12, 36], "color": "#D1FAE5"},
                         ],
                         "threshold": {"line": {"color": BLUE, "width": 3}, "value": 18},
                     },
                     number={"font": {"color": gauge_color, "size": 48}},
                 ))
-                fig_gauge.update_layout(
-                    paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
-                    font=dict(color="#0F172A"), height=260,
-                    margin=dict(l=20, r=20, t=40, b=20),
-                )
-                st.plotly_chart(fig_gauge, use_container_width=True)
+
+            fig_gauge.update_layout(
+                paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+                font=dict(color="#0F172A"), height=260,
+                margin=dict(l=20, r=20, t=40, b=20),
+            )
+            st.plotly_chart(fig_gauge, use_container_width=True)
 
             st.markdown("<hr/>", unsafe_allow_html=True)
 
-            _recommended = _burn * 18 if _burn > 0 else _blend["base"] * 0.15
+            if runway_months is None:
+                _recommended = revenue_gbp * 0.5
+            else:
+                _recommended = runway_burn * 18
             _dilution     = 0.20 if _stage == "Seed" else 0.15 if _stage == "Series A" else 0.12
             _post_money   = _blend["base"] + _recommended
 
@@ -1568,9 +1600,9 @@ setTimeout(function() {
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("Cash runway bridge")
 
-            if _burn > 0 and _runway is not None:
-                _mo = list(range(0, min(_runway + 1, 37)))
-                _cv = [max(_cash - _burn * m, 0) for m in _mo]
+            if runway_burn > 0 and runway_months is not None:
+                _mo = list(range(0, min(runway_months + 1, 37)))
+                _cv = [max(runway_cash - runway_burn * m, 0) for m in _mo]
                 fig_burn = go.Figure()
                 fig_burn.add_trace(go.Scatter(
                     x=_mo, y=[c/1e6 for c in _cv],
@@ -1579,13 +1611,13 @@ setTimeout(function() {
                     fillcolor="rgba(29,78,216,0.07)",
                     name="Cash (£m)",
                 ))
-                if 12 <= _runway:
+                if 12 <= runway_months:
                     fig_burn.add_vline(x=12, line_dash="dot", line_color=RED,
                                        annotation_text="12-month warning",
                                        annotation_font_color=RED)
-                if _runway < 36:
-                    fig_burn.add_vline(x=_runway, line_dash="dash", line_color=AMBER,
-                                       annotation_text=f"Zero cash (M{_runway})",
+                if runway_months < 36:
+                    fig_burn.add_vline(x=runway_months, line_dash="dash", line_color=AMBER,
+                                       annotation_text=f"Zero cash (M{runway_months})",
                                        annotation_font_color=AMBER)
                 fig_burn.update_layout(
                     title="Cash balance over time (£m)",
@@ -1600,10 +1632,10 @@ setTimeout(function() {
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("Fundraising readiness checklist")
             _tips = [
-                ("Runway",            _runway is not None and _runway >= 18,
-                 f"{_runway} months remaining" if (_runway is not None and _runway >= 18)
-                 else ("Not applicable — no burn entered" if _runway is None
-                       else f"Only {_runway} months — raise urgently")),
+                ("Runway",            runway_months is not None and runway_months >= 18,
+                 f"{runway_months} months remaining" if (runway_months is not None and runway_months >= 18)
+                 else ("∞ — no burn entered" if runway_months is None
+                       else f"Only {runway_months} months — raise urgently")),
                 ("Revenue traction",  _revenue > 0,  fmt_gbp(_revenue) + " ARR"),
                 ("Growth rate",       _growth_pct >= 50, f"{_growth_pct}% YoY growth"),
                 ("EBITDA visibility", _ebitda_margin >= 0, f"{_ebitda_margin}% margin"),
