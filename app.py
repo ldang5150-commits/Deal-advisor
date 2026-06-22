@@ -1146,7 +1146,7 @@ def render_home() -> None:
             st.session_state.pop("blended_base_ev", None)
             st.session_state["active_tab"] = "Valuation"
             st.session_state["page"] = "results"
-            st.session_state["scroll_to_top"] = True
+            st.query_params["scroll"] = "top"
             st.rerun()
 
     st.markdown(
@@ -1161,20 +1161,24 @@ def render_home() -> None:
 # ══════════════════════════════════════════════════════════════════════════════
 def render_results() -> None:
     st.markdown('<div id="results-top"></div>', unsafe_allow_html=True)
-    if st.session_state.pop("scroll_to_top", False):
+    if st.query_params.get("scroll") == "top":
+        st.query_params.clear()
         components.html("""
-<script>
-(function() {
-    function scrollUp() {
-        var el = window.parent.document.querySelector('section.main');
-        if (el) { el.scrollTop = 0; el.scrollTo(0, 0); }
-        window.parent.scrollTo(0, 0);
-    }
-    scrollUp();
-    setTimeout(scrollUp, 100);
-    setTimeout(scrollUp, 300);
-})();
-</script>""", height=0, scrolling=False)
+        <script>
+            function scrollUp() {
+                var main = window.parent.document.querySelector('.main');
+                if (main) {
+                    main.scrollTop = 0;
+                } else {
+                    window.parent.scrollTo(0, 0);
+                }
+            }
+            scrollUp();
+            setTimeout(scrollUp, 50);
+            setTimeout(scrollUp, 150);
+            setTimeout(scrollUp, 400);
+        </script>
+        """, height=0)
     # ── Read snapshotted values (set by Run analysis / demo buttons) ──────────
     # _run_ keys are written at the moment the user clicks Run or a demo button,
     # capturing the actual widget state. inp_ keys are the fallback for first load.
