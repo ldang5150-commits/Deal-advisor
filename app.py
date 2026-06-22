@@ -1083,7 +1083,7 @@ setTimeout(function() {
     _growth_pct    = st.session_state.inp_growth
     _ebitda_margin = st.session_state.inp_ebitda
     _stage         = st.session_state.inp_stage
-    _sector        = st.session_state.inp_sector
+    _sector        = st.session_state.get("sector_select") or st.session_state.get("inp_sector", "FinTech")
     _geography     = st.session_state.inp_geo
     _cash          = st.session_state.inp_cash
     _burn          = st.session_state.inp_burn
