@@ -1499,98 +1499,80 @@ setTimeout(function() {
                 f"Runway, raise sizing, and readiness · {company}"
             )
 
-            # === FUNDRAISING INPUTS — always read directly from session state ===
-            _f_cash    = float(st.session_state.get("inp_cash", 1_500_000))
-            _f_burn    = float(st.session_state.get("inp_burn", 200_000))
-            _f_revenue = float(st.session_state.get("inp_revenue", 4_000_000))
-            _f_growth  = float(st.session_state.get("inp_growth", 70))
-            _f_ebitda  = float(st.session_state.get("inp_ebitda", 10))
-            _f_stage   = str(st.session_state.get("inp_stage", "Series A"))
+            # ── Fundraising: read all inputs directly from session state ──────
+            _f_cash   = float(st.session_state.get("inp_cash",    1_500_000))
+            _f_burn   = float(st.session_state.get("inp_burn",      200_000))
+            _f_rev    = float(st.session_state.get("inp_revenue", 4_000_000))
+            _f_growth = float(st.session_state.get("inp_growth",          70))
+            _f_ebitda = float(st.session_state.get("inp_ebitda",          10))
+            _f_stage  = str(st.session_state.get(
+                "stage_select", st.session_state.get("inp_stage", "Series A")))
+            _f_sector = str(st.session_state.get(
+                "sector_select", st.session_state.get("inp_sector", "FinTech")))
 
-            # Runway
+            # ── Runway ───────────────────────────────────────────────────────
             if _f_burn > 0 and _f_cash > 0:
-                runway_months = int(_f_cash / _f_burn)
-            elif _f_burn == 0:
-                runway_months = 999
+                _f_runway = int(_f_cash / _f_burn)
             else:
-                runway_months = 0
+                _f_runway = 999  # profitable / no burn
 
-            # Recommended raise
+            # ── Recommended raise ────────────────────────────────────────────
             if _f_burn > 0:
-                _f_rec_raise = _f_burn * 18
+                _f_raise = _f_burn * 18
             else:
-                _f_rec_raise = _f_revenue * 0.3
-            _f_rec_raise = max(_f_rec_raise, 100_000)
+                _f_raise = _f_rev * 0.3
+            _f_raise = max(_f_raise, 100_000)
 
-            # Blended EV (stored after valuation runs)
-            _f_blended_ev = float(st.session_state.get("blended_base_ev", _f_revenue * 7))
-            if _f_blended_ev <= 0:
-                _f_blended_ev = _f_revenue * 7
+            # ── Blended EV & post-money ──────────────────────────────────────
+            _f_ev = float(st.session_state.get("blended_base_ev", _f_rev * 7))
+            if _f_ev <= 0:
+                _f_ev = _f_rev * 7
+            _f_post = _f_ev + _f_raise
+            _f_dil  = round(max(8.0, min(30.0,
+                (_f_raise / _f_post * 100) if _f_post > 0 else 15.0)), 1)
 
-            # Post-money and dilution
-            _f_post_money = _f_blended_ev + _f_rec_raise
-            if _f_post_money > 0:
-                _f_dilution = (_f_rec_raise / _f_post_money) * 100
-                _f_dilution = max(8.0, min(35.0, _f_dilution))
+            # ── Runway display helpers ───────────────────────────────────────
+            if _f_runway >= 999:
+                _f_gauge_val   = 36
+                _f_gauge_color = GREEN
+                _f_runway_msg  = "Profitable — no burn"
+            elif _f_runway < 9:
+                _f_gauge_val   = _f_runway
+                _f_gauge_color = RED
+                _f_runway_msg  = f"Only {_f_runway} months — raise urgently"
+            elif _f_runway < 18:
+                _f_gauge_val   = _f_runway
+                _f_gauge_color = AMBER
+                _f_runway_msg  = f"{_f_runway} months — plan your raise"
             else:
-                _f_dilution = 15.0
+                _f_gauge_val   = min(_f_runway, 36)
+                _f_gauge_color = GREEN
+                _f_runway_msg  = f"{_f_runway} months — healthy runway"
 
-            # Runway display helpers
-            if runway_months >= 999:
-                runway_text  = "Profitable — no burn"
-                runway_color_str = "green"
-            elif runway_months < 9:
-                runway_text  = f"Only {runway_months} months — raise urgently"
-                runway_color_str = "red"
-            elif runway_months < 18:
-                runway_text  = f"{runway_months} months — plan your raise"
-                runway_color_str = "orange"
-            else:
-                runway_text  = f"{runway_months} months — healthy runway"
-                runway_color_str = "green"
-
-            if runway_months >= 999:
-                gauge_color = GREEN
-                fig_gauge = go.Figure(go.Indicator(
-                    mode="gauge+number",
-                    value=36,
-                    domain={"x": [0, 1], "y": [0, 1]},
-                    title={"text": "Runway (months)", "font": {"color": "#64748B", "size": 13}},
-                    gauge={
-                        "axis": {"range": [0, 36], "tickcolor": "#94A3B8",
-                                 "tickfont": {"color": "#94A3B8"}},
-                        "bar": {"color": GREEN},
-                        "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
-                        "steps": [
-                            {"range": [0, 9],  "color": "#FEE2E2"},
-                            {"range": [9, 18], "color": "#FEF3C7"},
-                            {"range": [18, 36], "color": "#D1FAE5"},
-                        ],
-                    },
-                    number={"suffix": " ∞", "font": {"color": GREEN, "size": 48}},
-                ))
-            else:
-                gauge_color = RED if runway_months < 9 else AMBER if runway_months < 18 else GREEN
-                fig_gauge = go.Figure(go.Indicator(
-                    mode="gauge+number",
-                    value=runway_months,
-                    domain={"x": [0, 1], "y": [0, 1]},
-                    title={"text": "Runway (months)", "font": {"color": "#64748B", "size": 13}},
-                    gauge={
-                        "axis": {"range": [0, 36], "tickcolor": "#94A3B8",
-                                 "tickfont": {"color": "#94A3B8"}},
-                        "bar": {"color": gauge_color},
-                        "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
-                        "steps": [
-                            {"range": [0, 9],  "color": "#FEE2E2"},
-                            {"range": [9, 18], "color": "#FEF3C7"},
-                            {"range": [18, 36], "color": "#D1FAE5"},
-                        ],
-                        "threshold": {"line": {"color": BLUE, "width": 3}, "value": 18},
-                    },
-                    number={"font": {"color": gauge_color, "size": 48}},
-                ))
-
+            fig_gauge = go.Figure(go.Indicator(
+                mode="gauge+number",
+                value=_f_gauge_val,
+                domain={"x": [0, 1], "y": [0, 1]},
+                title={"text": "Runway (months)", "font": {"color": "#64748B", "size": 13}},
+                gauge={
+                    "axis": {"range": [0, 36], "tickcolor": "#94A3B8",
+                             "tickfont": {"color": "#94A3B8"}},
+                    "bar": {"color": _f_gauge_color},
+                    "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
+                    "steps": [
+                        {"range": [0, 9],  "color": "#FEE2E2"},
+                        {"range": [9, 18], "color": "#FEF3C7"},
+                        {"range": [18, 36], "color": "#D1FAE5"},
+                    ],
+                    "threshold": {"line": {"color": BLUE, "width": 3}, "value": 18},
+                },
+                number={"suffix": (" mo" if _f_runway < 999 else ""),
+                        "font": {"color": _f_gauge_color, "size": 48}},
+            ))
+            if _f_runway >= 999:
+                fig_gauge.add_annotation(
+                    text="∞", x=0.5, y=0.45, showarrow=False,
+                    font=dict(size=56, color=GREEN), xref="paper", yref="paper")
             fig_gauge.update_layout(
                 paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
                 font=dict(color="#0F172A"), height=260,
@@ -1601,9 +1583,9 @@ setTimeout(function() {
             st.markdown("<hr/>", unsafe_allow_html=True)
 
             _fm1, _fm2, _fm3 = st.columns(3)
-            _fm1.metric("Recommended raise", fmt_gbp(_f_rec_raise))
-            _fm2.metric("Estimated dilution", f"{_f_dilution:.1f}%")
-            _fm3.metric("Post-money (base)",  fmt_gbp(_f_post_money))
+            _fm1.metric("Recommended raise", fmt_gbp(_f_raise))
+            _fm2.metric("Estimated dilution", f"{_f_dil:.1f}%")
+            _fm3.metric("Post-money (base)",  fmt_gbp(_f_post))
 
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("Suggested use of funds")
@@ -1620,10 +1602,10 @@ setTimeout(function() {
                 "Cybersecurity":{"Engineering & Product": 40, "Sales & Marketing": 30, "Compliance": 15, "Operations": 10, "G&A / Legal": 5},
                 "Other":        {"Engineering & Product": 35, "Sales & Marketing": 30, "Operations": 15, "G&A / Legal": 12, "Reserve": 8},
             }
-            _fund_alloc = _SECTOR_FUNDS.get(_sector, _SECTOR_FUNDS["Other"])
+            _fund_alloc = _SECTOR_FUNDS.get(_f_sector, _SECTOR_FUNDS["Other"])
             _cats = list(_fund_alloc.keys())
             _weights = [v / 100 for v in _fund_alloc.values()]
-            _amounts = [_f_rec_raise * w for w in _weights]
+            _amounts = [_f_raise * w for w in _weights]
 
             fig_pie = go.Figure(go.Pie(
                 labels=_cats, values=_amounts, hole=0.45,
@@ -1632,7 +1614,7 @@ setTimeout(function() {
                 textfont=dict(color="#0F172A", size=12),
             ))
             fig_pie.update_layout(
-                title=f"Use of {fmt_gbp(_f_rec_raise)} raise",
+                title=f"Use of {fmt_gbp(_f_raise)} raise",
                 showlegend=False, **{k: v for k, v in PLOTLY_BASE.items() if k not in ("legend",)},
             )
             st.plotly_chart(fig_pie, use_container_width=True)
@@ -1640,16 +1622,16 @@ setTimeout(function() {
             uof_df = pd.DataFrame({
                 "Category":   _cats,
                 "Allocation": [f"{w*100:.0f}%" for w in _weights],
-                "Amount (£)": [f"£{_f_rec_raise * w:,.0f}" for w in _weights],
+                "Amount (£)": [f"£{_f_raise * w:,.0f}" for w in _weights],
             })
             st.dataframe(uof_df, hide_index=True, use_container_width=True)
 
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("Cash runway bridge")
 
-            if runway_burn > 0 and runway_months < 999:
-                _mo = list(range(0, min(runway_months + 1, 37)))
-                _cv = [max(runway_cash - runway_burn * m, 0) for m in _mo]
+            if _f_burn > 0 and _f_runway < 999:
+                _mo = list(range(0, min(_f_runway + 1, 37)))
+                _cv = [max(_f_cash - _f_burn * m, 0) for m in _mo]
                 fig_burn = go.Figure()
                 fig_burn.add_trace(go.Scatter(
                     x=_mo, y=[c/1e6 for c in _cv],
@@ -1658,13 +1640,13 @@ setTimeout(function() {
                     fillcolor="rgba(29,78,216,0.07)",
                     name="Cash (£m)",
                 ))
-                if 12 <= runway_months:
+                if 12 <= _f_runway:
                     fig_burn.add_vline(x=12, line_dash="dot", line_color=RED,
                                        annotation_text="12-month warning",
                                        annotation_font_color=RED)
-                if runway_months < 36:
-                    fig_burn.add_vline(x=runway_months, line_dash="dash", line_color=AMBER,
-                                       annotation_text=f"Zero cash (M{runway_months})",
+                if _f_runway < 36:
+                    fig_burn.add_vline(x=_f_runway, line_dash="dash", line_color=AMBER,
+                                       annotation_text=f"Zero cash (M{_f_runway})",
                                        annotation_font_color=AMBER)
                 fig_burn.update_layout(
                     title="Cash balance over time (£m)",
@@ -1679,11 +1661,11 @@ setTimeout(function() {
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("Fundraising readiness checklist")
             _tips = [
-                ("Runway",            runway_months >= 18,
-                 ("∞ — profitable / no burn" if runway_months >= 999
-                  else f"{runway_months} months remaining" if runway_months >= 18
-                  else f"Only {runway_months} months — raise urgently")),
-                ("Revenue traction",  _f_revenue > 0,  fmt_gbp(_f_revenue) + " ARR"),
+                ("Runway",            _f_runway >= 18,
+                 ("∞ — profitable / no burn" if _f_runway >= 999
+                  else f"{_f_runway} months remaining" if _f_runway >= 18
+                  else f"Only {_f_runway} months — raise urgently")),
+                ("Revenue traction",  _f_rev > 0,  fmt_gbp(_f_rev) + " ARR"),
                 ("Growth rate",       _f_growth >= 50, f"{_f_growth}% YoY growth"),
                 ("EBITDA visibility", _f_ebitda >= 0, f"{_f_ebitda}% margin"),
             ]
@@ -1721,7 +1703,7 @@ setTimeout(function() {
             fig_dil.add_hline(y=20, line_dash="dash", line_color="#F59E0B",
                                annotation_text="Typical floor", annotation_position="top right")
             # Mark current stage with a highlighted point on the line
-            _stage_idx = {"Pre-Seed": 0, "Seed": 1, "Series A": 2, "Series B": 3, "Series C+": 4, "Growth": 4}.get(_stage, 0)
+            _stage_idx = {"Pre-Seed": 0, "Seed": 1, "Series A": 2, "Series B": 3, "Series C+": 4, "Growth": 4}.get(_f_stage, 0)
             if _stage_idx > 0:
                 fig_dil.add_trace(go.Scatter(
                     x=[_rounds[_stage_idx]], y=[_ownership[_stage_idx]],
@@ -1745,7 +1727,7 @@ setTimeout(function() {
             _own2 = 100.0
             for _rnd, _d in zip(_rounds, _dilutions):
                 _own2 = _own2 * (1 - _d / 100)
-                _implied = _own2 / 100 * _blend.get("base", 0)
+                _implied = _own2 / 100 * _f_ev
                 _dil_rows.append({"Round": _rnd, "Dilution sold": f"{_d}%", "Founder ownership": f"{_own2:.1f}%", "Implied stake value": fmt_gbp(_implied)})
             st.dataframe(pd.DataFrame(_dil_rows), use_container_width=True, hide_index=True)
 
