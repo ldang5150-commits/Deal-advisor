@@ -677,7 +677,7 @@ def render_landing() -> None:
 </style>
 """, unsafe_allow_html=True)
 
-    _l, _m, _r = st.columns([1, 6, 1])
+    _l, _m, _r = st.columns([1, 4, 1])
     with _m:
         # ── Section A: Hero ───────────────────────────────────────────────────
         st.markdown("""
@@ -700,9 +700,9 @@ def render_landing() -> None:
 </div>
 """, unsafe_allow_html=True)
 
-        _cl, _cc, _cr = st.columns([1, 1, 1])
-        with _cc:
-            if st.button("Start your analysis", use_container_width=True, type="primary", key="landing_cta_top"):
+        _, _btn_col, _ = st.columns([1, 2, 1])
+        with _btn_col:
+            if st.button("Start your analysis →", use_container_width=True, type="primary", key="landing_cta_top"):
                 st.session_state.page = "home"
                 st.rerun()
 
@@ -750,23 +750,36 @@ def render_landing() -> None:
         st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True)
 
         # ── Section D: How it works ───────────────────────────────────────────
-        st.markdown("### How it works")
-        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown("""
+<div style="text-align: center; margin-bottom: 8px;">
+  <span style="font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+               color: #64748B;">How it works</span>
+</div>
+""", unsafe_allow_html=True)
 
-        _steps = [
-            ("1", "Enter your company", "Revenue, growth, margin, sector, stage. Or load a demo company."),
-            ("2", "Runrate runs the analysis", "DCF, comparables, VC scoring, and outreach — all computed in seconds."),
-            ("3", "Act on the output", "Download your valuation, shortlist investors, and send tailored outreach."),
+        _how_steps = [
+            ("Enter your company", "Revenue, growth, margin, sector, stage — or load a real demo company."),
+            ("Runrate runs the analysis", "DCF, comparables, VC scoring, and outreach — all computed in seconds."),
+            ("Act on the output", "Defend your valuation, shortlist investors, send tailored outreach."),
         ]
-        for _num, _title, _desc in _steps:
+        for _i, (_title, _desc) in enumerate(_how_steps, 1):
             st.markdown(f"""
-<div class='how-step'>
-  <div class='how-num'>{_num}</div>
-  <div>
-    <p style='font-size:15px;font-weight:600;color:#0A0F1E;margin:0 0 4px;'>{_title}</p>
-    <p style='font-size:14px;color:#64748B;margin:0;'>{_desc}</p>
-  </div>
-</div>""", unsafe_allow_html=True)
+<div style="display: flex; align-items: flex-start; gap: 16px;
+            max-width: 520px; margin: 0 auto 20px; text-align: left;">
+    <div style="width: 36px; height: 36px; background: #00D4AA;
+                border-radius: 8px; display: flex; align-items: center;
+                justify-content: center; flex-shrink: 0;">
+        <span style="font-size: 15px; font-weight: 600; color: #0A0F1E;">{_i}</span>
+    </div>
+    <div>
+        <div style="font-size: 15px; font-weight: 500; color: #0F172A;
+                    margin-bottom: 4px;">{_title}</div>
+        <div style="font-size: 13px; color: #64748B;
+                    line-height: 1.5;">{_desc}</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
         st.markdown("<div style='height:40px;'></div>", unsafe_allow_html=True)
 
@@ -782,9 +795,9 @@ def render_landing() -> None:
         st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True)
 
         # ── Section F: Final CTA ──────────────────────────────────────────────
-        _fl, _fc, _fr = st.columns([1, 1, 1])
+        _, _fc, _ = st.columns([1, 2, 1])
         with _fc:
-            if st.button("Start your analysis", use_container_width=True, type="primary", key="landing_cta_bottom"):
+            if st.button("Start your analysis →", use_container_width=True, type="primary", key="landing_cta_bottom"):
                 st.session_state.page = "home"
                 st.rerun()
 
