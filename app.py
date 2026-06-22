@@ -445,6 +445,46 @@ st.markdown("""
   .sidebar-nav-item { font-size: 14px !important; font-weight: 400 !important; color: #64748B !important; }
   .sidebar-nav-item-active { font-size: 14px !important; font-weight: 500 !important; color: #FFFFFF !important; }
 
+  /* ── Dark sidebar shell ── */
+  [data-testid="column"]:first-child > div:first-child {
+    background: #0A0F1E !important;
+    border-radius: 12px !important;
+    padding: 16px 10px !important;
+    min-height: 600px !important;
+  }
+  [data-testid="column"]:first-child button {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 7px 10px !important;
+    width: 100% !important;
+    text-align: left !important;
+    cursor: pointer !important;
+    font-size: 13px !important;
+    color: #8892AA !important;
+    font-weight: 400 !important;
+  }
+  [data-testid="column"]:first-child button:hover {
+    background: rgba(255,255,255,0.06) !important;
+    color: #C4CAD8 !important;
+  }
+  [data-testid="column"]:first-child button[kind="primary"] {
+    background: #00D4AA !important;
+    color: #0A0F1E !important;
+    font-weight: 500 !important;
+  }
+  [data-testid="column"]:first-child button[kind="primary"]:hover {
+    background: #00BF99 !important;
+  }
+  .sidebar-section-label {
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #4A5568; padding: 0 8px; margin: 12px 0 6px; display: block;
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 8px; margin-bottom: 18px;
+  }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -773,7 +813,6 @@ def render_topnav(company: str = "") -> None:
         f"color:#0A0F1E;cursor:pointer;'>&nbsp;</span>"
         f"{breadcrumb}"
         f"</div>"
-        f"<span style='font-size:13px;color:#94A3B8;'>Settings</span>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -1019,14 +1058,6 @@ def render_home() -> None:
 # ══════════════════════════════════════════════════════════════════════════════
 def render_results() -> None:
     company = st.session_state.inp_company
-    render_topnav(company=company)
-
-    # ── Back link ──
-    st.markdown('<div class="back-link" style="display:none;"></div>',
-                unsafe_allow_html=True)
-    if st.button("← Back to home", key="back_home_btn"):
-        st.session_state.page = "home"
-        st.rerun()
 
     st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
@@ -1083,19 +1114,37 @@ def render_results() -> None:
     _blend = blended_valuation(_dcf, _comps)
     _runway = int(_cash / _burn) if _burn > 0 else 999
 
-    # ── Layout: sidebar (1) + main (4) ──
-    nav_col, main_col = st.columns([1.5, 4], gap="large")
+    # ── Layout: sidebar + main ──
+    nav_col, main_col = st.columns([1.3, 5], gap="large")
 
     # ── LEFT SIDEBAR NAV ──
     with nav_col:
-        st.markdown(
-            "<div style='background:#FFFFFF;border:1px solid #E2E8F0;"
-            "border-radius:8px;padding:12px 8px;'>"
-            "<p style='font-size:10px;letter-spacing:0.1em;text-transform:uppercase;"
-            "color:#94A3B8;margin:0 0 10px;padding:0 8px;'>Analysis</p>"
-            "</div>",
-            unsafe_allow_html=True,
-        )
+        st.markdown("""
+<div class="sidebar-logo">
+    <div style="width:28px;height:28px;background:#00D4AA;border-radius:6px;
+                display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+            <polyline points="1,10 5,6 8,8 12,2 15,1"
+                      stroke="#0A0F1E" stroke-width="2.2"
+                      stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <circle cx="15" cy="1" r="1.8" fill="#0A0F1E"/>
+        </svg>
+    </div>
+    <div>
+        <div style="font-size:14px;font-weight:500;color:#F5F5F0;
+                    letter-spacing:-0.01em;line-height:1;">Runrate</div>
+        <div style="font-size:9px;color:#4A5568;letter-spacing:0.06em;
+                    text-transform:uppercase;margin-top:1px;">Deal intelligence</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+        if st.button("← Back", key="sidebar_back", use_container_width=True):
+            st.session_state.page = "landing"
+            st.rerun()
+
+        st.markdown('<span class="sidebar-section-label">Analysis</span>',
+                    unsafe_allow_html=True)
 
         NAV_ITEMS = [
             "Valuation",
@@ -1106,14 +1155,25 @@ def render_results() -> None:
         ]
         for item in NAV_ITEMS:
             is_active = st.session_state.active_tab == item
-            if _nav_btn(item, is_active, key=f"nav_{item.replace(' ', '_')}"):
+            btn_type = "primary" if is_active else "secondary"
+            if st.button(item, key=f"nav_{item.replace(' ', '_')}",
+                         use_container_width=True, type=btn_type):
                 st.session_state.active_tab = item
                 st.rerun()
 
-        st.markdown(
-            "<div style='border-top:1px solid #E2E8F0;margin:12px 8px;'></div>",
-            unsafe_allow_html=True,
-        )
+        st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
+        _cname = st.session_state.get("inp_company", "")
+        _csector = st.session_state.get("inp_sector", "")
+        _cstage = st.session_state.get("inp_stage", "")
+        if _cname:
+            st.markdown(
+                f"<div style='border-top:0.5px solid #1A2035;padding:12px 8px 0;margin-top:4px;'>"
+                f"<div style='font-size:11px;font-weight:500;color:#C4CAD8;margin-bottom:2px;"
+                f"overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>{_cname}</div>"
+                f"<div style='font-size:10px;color:#4A5568;'>{_csector} · {_cstage}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
 
     # ── MAIN CONTENT ──
     with main_col:
