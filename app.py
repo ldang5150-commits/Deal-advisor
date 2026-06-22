@@ -658,67 +658,67 @@ def _snapshot_run_keys() -> None:
 def _load_preset(name: str) -> None:
     presets = {
         "Wise": {
-            "inp_company": "Wise plc",
-            "sector_select": "Payments & Transaction Processing",
-            "inp_stage": "Growth",
-            "inp_geo": "Global",
-            "inp_revenue": 1869000000,
-            "inp_growth": 21,
-            "inp_ebitda": 29,
-            "inp_cash": 1430000000,
-            "inp_burn": 0,
+            "inp_company":         "Wise plc",
+            "sector_select":       "Payments & Transaction Processing",
+            "inp_stage":           "Growth",
+            "inp_geo":             "Global",
+            "inp_revenue":         1869000000,
+            "inp_growth":          21,
+            "inp_ebitda":          29,
+            "inp_cash":            1430000000,
+            "inp_burn":            0,
             "inp_ev_rev_multiple": 3.4,
-            "inp_tax": 25,
-            "inp_capex": 4,
-            "inp_target_margin": 25,
+            "inp_tax":             25,
+            "inp_capex":           5,
+            "inp_target_margin":   25,
             "inp_terminal_growth": 3.0,
-            "inp_rfr": 4.2,
-            "inp_erp": 5.5,
-            "inp_wacc_kd": 8.0,
-            "inp_wacc_debt": 230000000,
-            "inp_horizon": 5,
+            "inp_rfr":             4.2,
+            "inp_erp":             5.5,
+            "inp_wacc_kd":         5.5,
+            "inp_wacc_debt":       230000000,
+            "inp_horizon":         5,
         },
         "Revolut": {
-            "inp_company": "Revolut",
-            "sector_select": "FinTech",
-            "inp_stage": "Growth",
-            "inp_geo": "Global",
-            "inp_revenue": 3100000000,
-            "inp_growth": 72,
-            "inp_ebitda": 36,
-            "inp_cash": 2100000000,
-            "inp_burn": 0,
+            "inp_company":         "Revolut",
+            "sector_select":       "FinTech",
+            "inp_stage":           "Growth",
+            "inp_geo":             "Global",
+            "inp_revenue":         3100000000,
+            "inp_growth":          72,
+            "inp_ebitda":          36,
+            "inp_cash":            2100000000,
+            "inp_burn":            0,
             "inp_ev_rev_multiple": 11.25,
-            "inp_tax": 25,
-            "inp_capex": 4,
-            "inp_target_margin": 25,
-            "inp_terminal_growth": 3.0,
-            "inp_rfr": 4.2,
-            "inp_erp": 5.5,
-            "inp_wacc_kd": 8.0,
-            "inp_wacc_debt": 500000000,
-            "inp_horizon": 5,
+            "inp_tax":             25,
+            "inp_capex":           4,
+            "inp_target_margin":   30,
+            "inp_terminal_growth": 3.5,
+            "inp_rfr":             4.2,
+            "inp_erp":             5.5,
+            "inp_wacc_kd":         6.0,
+            "inp_wacc_debt":       500000000,
+            "inp_horizon":         5,
         },
         "Darktrace": {
-            "inp_company": "Darktrace",
-            "sector_select": "Cybersecurity",
-            "inp_stage": "Growth",
-            "inp_geo": "Global",
-            "inp_revenue": 552000000,
-            "inp_growth": 26,
-            "inp_ebitda": 22,
-            "inp_cash": 280000000,
-            "inp_burn": 0,
+            "inp_company":         "Darktrace",
+            "sector_select":       "Cybersecurity",
+            "inp_stage":           "Growth",
+            "inp_geo":             "Global",
+            "inp_revenue":         552000000,
+            "inp_growth":          26,
+            "inp_ebitda":          22,
+            "inp_cash":            280000000,
+            "inp_burn":            0,
             "inp_ev_rev_multiple": 6.2,
-            "inp_tax": 25,
-            "inp_capex": 4,
-            "inp_target_margin": 25,
+            "inp_tax":             25,
+            "inp_capex":           5,
+            "inp_target_margin":   28,
             "inp_terminal_growth": 3.0,
-            "inp_rfr": 4.2,
-            "inp_erp": 5.5,
-            "inp_wacc_kd": 8.0,
-            "inp_wacc_debt": 0,
-            "inp_horizon": 5,
+            "inp_rfr":             4.2,
+            "inp_erp":             5.5,
+            "inp_wacc_kd":         7.0,
+            "inp_wacc_debt":       0,
+            "inp_horizon":         5,
         },
     }
     # Step 1: Wipe ALL existing widget, run, and preset keys
@@ -1008,28 +1008,30 @@ def render_home() -> None:
     render_topnav()
 
     # ── Initialise sector-specific defaults on first load ──
-    # Uses a sentinel so this runs exactly once, regardless of whether
-    # number_input widgets have already initialised their keys to 0.
-    if "defaults_initialised" not in st.session_state:
+    # Skipped if a preset was just loaded (_preset_loaded flag) so demo
+    # company values are never overwritten by sector defaults.
+    if "defaults_initialised" not in st.session_state and \
+       not st.session_state.get("_preset_loaded", False):
+        sector = st.session_state.get("sector_select", "FinTech")
+        d = SECTOR_DEFAULTS.get(sector, SECTOR_DEFAULTS["Other"])
+        for k in ["inp_revenue", "inp_growth", "inp_ebitda", "inp_cash",
+                  "inp_burn", "inp_tax", "inp_capex", "inp_target_margin",
+                  "inp_terminal_growth", "inp_rfr", "inp_erp",
+                  "inp_ev_rev_multiple"]:
+            st.session_state.pop(k, None)
+        st.session_state["inp_revenue"]         = d["revenue"]
+        st.session_state["inp_growth"]          = d["growth"]
+        st.session_state["inp_ebitda"]          = d["ebitda"]
+        st.session_state["inp_cash"]            = d.get("cash", 1_000_000)
+        st.session_state["inp_burn"]            = d.get("burn", 150_000)
+        st.session_state["inp_tax"]             = d.get("tax", 25)
+        st.session_state["inp_capex"]           = d.get("capex", 5)
+        st.session_state["inp_target_margin"]   = d.get("target_margin", 25)
+        st.session_state["inp_terminal_growth"] = d.get("terminal_growth", 3.0)
+        st.session_state["inp_rfr"]             = d.get("rfr", 4.2)
+        st.session_state["inp_erp"]             = d.get("erp", 5.5)
+        st.session_state["inp_ev_rev_multiple"] = d.get("ev_rev_multiple", 7.0)
         st.session_state["defaults_initialised"] = True
-        if "sector_select" not in st.session_state:
-            st.session_state["sector_select"] = "FinTech"
-        _d0 = SECTOR_DEFAULTS.get(st.session_state["sector_select"], SECTOR_DEFAULTS["Other"])
-        st.session_state["inp_revenue"]         = _d0["revenue"]
-        st.session_state["inp_growth"]          = _d0["growth"]
-        st.session_state["inp_ebitda"]          = _d0["ebitda"]
-        st.session_state["inp_tax"]             = _d0["tax"]
-        st.session_state["inp_capex"]           = _d0["capex"]
-        st.session_state["inp_target_margin"]   = _d0["target_margin"]
-        st.session_state["inp_terminal_growth"] = _d0["terminal_growth"]
-        st.session_state["inp_rfr"]             = _d0["rfr"]
-        st.session_state["inp_erp"]             = _d0["erp"]
-        st.session_state["inp_cash"]            = _d0.get("cash", 1_000_000)
-        st.session_state["inp_burn"]            = _d0.get("burn", 150_000)
-        from modules.valuation import SECTOR_MULTIPLES as _SM0
-        st.session_state["inp_ev_rev_multiple"] = float(
-            _SM0.get(st.session_state["sector_select"], _SM0["Other"])["base"]
-        )
 
     # ── Demo quick-load ──
     st.markdown(
