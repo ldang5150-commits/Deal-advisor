@@ -1210,25 +1210,6 @@ def render_home() -> None:
 
     st.markdown("<div style='height:24px;'></div>", unsafe_allow_html=True)
 
-    # ── Run analysis button (centered) ──
-    _r1, _r2, _r3 = st.columns([3, 2, 3])
-    with _r2:
-        if st.button("Run analysis", key="run_analysis_btn", use_container_width=True):
-            with st.spinner("Running valuation models..."):
-                import time; time.sleep(0.6)
-            _snapshot_run_keys()
-            st.session_state.pop("blended_base_ev", None)
-            st.session_state["active_tab"] = "Valuation"
-            st.session_state["page"] = "results"
-            st.query_params["scroll"] = "top"
-            st.rerun()
-
-    st.markdown(
-        "<p style='font-size:12px;color:#94A3B8;text-align:center;"
-        "margin-top:8px;'>Results open in a new view</p>",
-        unsafe_allow_html=True,
-    )
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # RESULTS PAGE
