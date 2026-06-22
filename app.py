@@ -1,6 +1,7 @@
 """Runrate — Deal intelligence Streamlit app."""
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import plotly.graph_objects as go
 import os
@@ -1161,9 +1162,9 @@ def render_home() -> None:
 def render_results() -> None:
     st.markdown('<div id="results-top"></div>', unsafe_allow_html=True)
     if st.session_state.pop("scroll_to_top", False):
-        st.markdown(
-            '<script>window.scrollTo(0,0);document.documentElement.scrollTop=0;</script>',
-            unsafe_allow_html=True,
+        components.html(
+            "<script>window.parent.document.querySelector('section.main').scrollTo(0, 0);</script>",
+            height=0,
         )
     # ── Read snapshotted values (set by Run analysis / demo buttons) ──────────
     # _run_ keys are written at the moment the user clicks Run or a demo button,
