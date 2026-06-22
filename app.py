@@ -50,35 +50,35 @@ SECTOR_BETAS = {
 
 # ── Sector-specific model defaults ───────────────────────────────────────────
 SECTOR_DEFAULTS = {
-    "Pure SaaS / Subscription Software": {"revenue": 3_000_000, "growth": 80, "ebitda": -15, "tax": 25, "capex": 3, "target_margin": 30, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "£1m-£10m ARR", "burn_note": "High burn typical pre-profitability"},
-    "Enterprise Software (B2B)": {"revenue": 5_000_000, "growth": 40, "ebitda": 5, "tax": 25, "capex": 4, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "£2m-£20m ARR", "burn_note": "Longer sales cycles, more stable burn"},
-    "Cybersecurity": {"revenue": 4_000_000, "growth": 60, "ebitda": -10, "tax": 25, "capex": 3, "target_margin": 28, "terminal_growth": 3.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "£1m-£15m ARR", "burn_note": "R&D heavy, high burn expected"},
-    "Semiconductors & Hardware": {"revenue": 8_000_000, "growth": 25, "ebitda": 10, "tax": 25, "capex": 15, "target_margin": 22, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Mixed recurring and project revenue", "burn_note": "High capex intensity"},
-    "AI / Machine Learning": {"revenue": 2_000_000, "growth": 120, "ebitda": -30, "tax": 25, "capex": 5, "target_margin": 35, "terminal_growth": 4.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Early ARR, rapid growth", "burn_note": "Very high compute costs"},
-    "FinTech": {"revenue": 4_000_000, "growth": 70, "ebitda": 10, "tax": 25, "capex": 4, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "£1m-£10m revenue", "burn_note": "Regulatory costs significant"},
-    "InsurTech": {"revenue": 5_000_000, "growth": 45, "ebitda": 5, "tax": 25, "capex": 3, "target_margin": 20, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Mix of premium and SaaS revenue", "burn_note": "Claims reserves affect burn"},
-    "Payments & Transaction Processing": {"revenue": 6_000_000, "growth": 55, "ebitda": 15, "tax": 25, "capex": 5, "target_margin": 28, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Transaction volume driven", "burn_note": "Capital efficient at scale"},
-    "Wealth Management & Trading": {"revenue": 3_000_000, "growth": 35, "ebitda": 20, "tax": 25, "capex": 3, "target_margin": 30, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "AUM-based fees", "burn_note": "Relatively capital efficient"},
-    "HealthTech / Digital Health": {"revenue": 3_000_000, "growth": 60, "ebitda": -10, "tax": 25, "capex": 4, "target_margin": 22, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "£500k-£5m ARR", "burn_note": "Clinical validation costs significant"},
-    "Biotech & Pharmaceuticals": {"revenue": 2_000_000, "growth": 50, "ebitda": -60, "tax": 25, "capex": 8, "target_margin": 35, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Pre-revenue to early revenue", "burn_note": "Very high R&D burn, long timeline"},
-    "Medical Devices": {"revenue": 4_000_000, "growth": 30, "ebitda": 5, "tax": 25, "capex": 10, "target_margin": 20, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Hardware + recurring revenue", "burn_note": "Manufacturing capex heavy"},
-    "E-Commerce (inventory-based)": {"revenue": 10_000_000, "growth": 30, "ebitda": 5, "tax": 25, "capex": 5, "target_margin": 12, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "GMV-based", "burn_note": "Working capital intensive, thin margins"},
-    "Consumer Marketplace (asset-light)": {"revenue": 5_000_000, "growth": 55, "ebitda": -5, "tax": 25, "capex": 3, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Take rate on GMV", "burn_note": "Supply-demand balance key"},
-    "Consumer Apps & Social": {"revenue": 2_000_000, "growth": 80, "ebitda": -25, "tax": 25, "capex": 3, "target_margin": 20, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Ad or subscription revenue", "burn_note": "User acquisition costs high"},
-    "Consumer Goods & FMCG": {"revenue": 8_000_000, "growth": 25, "ebitda": 12, "tax": 25, "capex": 6, "target_margin": 18, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Product revenue", "burn_note": "Distribution and marketing heavy"},
-    "Food & Beverage": {"revenue": 6_000_000, "growth": 20, "ebitda": 8, "tax": 25, "capex": 6, "target_margin": 15, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Product revenue", "burn_note": "Logistics and COGS intensive"},
-    "DeepTech & Advanced Manufacturing": {"revenue": 3_000_000, "growth": 50, "ebitda": -20, "tax": 25, "capex": 12, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Project and licence revenue", "burn_note": "High R&D and capex"},
-    "CleanTech & Renewable Energy": {"revenue": 5_000_000, "growth": 40, "ebitda": 10, "tax": 25, "capex": 15, "target_margin": 22, "terminal_growth": 3.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Project and recurring revenue", "burn_note": "Capital intensive deployment"},
-    "Logistics & Supply Chain": {"revenue": 10_000_000, "growth": 25, "ebitda": 8, "tax": 25, "capex": 8, "target_margin": 15, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Volume-based revenue", "burn_note": "Asset and working capital heavy"},
-    "Aerospace & Defence": {"revenue": 8_000_000, "growth": 15, "ebitda": 12, "tax": 25, "capex": 10, "target_margin": 18, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Government contract revenue", "burn_note": "Long contract cycles"},
-    "EdTech": {"revenue": 3_000_000, "growth": 45, "ebitda": 5, "tax": 25, "capex": 3, "target_margin": 22, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "B2B or B2C subscription", "burn_note": "Content costs significant"},
-    "PropTech & Real Estate": {"revenue": 5_000_000, "growth": 35, "ebitda": 10, "tax": 25, "capex": 4, "target_margin": 20, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Transaction or SaaS revenue", "burn_note": "Market cycle sensitive"},
-    "Media & Entertainment": {"revenue": 5_000_000, "growth": 20, "ebitda": 10, "tax": 25, "capex": 5, "target_margin": 18, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Ad, subscription, or licensing", "burn_note": "Content production costs"},
-    "Telecoms": {"revenue": 15_000_000, "growth": 10, "ebitda": 20, "tax": 25, "capex": 18, "target_margin": 25, "terminal_growth": 1.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Subscription revenue", "burn_note": "Infrastructure capex very high"},
-    "Energy (Oil, Gas, Mining)": {"revenue": 20_000_000, "growth": 10, "ebitda": 25, "tax": 30, "capex": 25, "target_margin": 28, "terminal_growth": 1.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Commodity price linked", "burn_note": "Exploration capex very high"},
-    "Retail (Physical)": {"revenue": 10_000_000, "growth": 8, "ebitda": 6, "tax": 25, "capex": 5, "target_margin": 10, "terminal_growth": 1.5, "rfr": 4.2, "erp": 5.5, "typical_arr": "Store-based revenue", "burn_note": "Lease and inventory costs high"},
-    "Professional Services": {"revenue": 5_000_000, "growth": 15, "ebitda": 18, "tax": 25, "capex": 2, "target_margin": 22, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Fee-based revenue", "burn_note": "People cost is main expense"},
-    "Other": {"revenue": 4_000_000, "growth": 40, "ebitda": 10, "tax": 25, "capex": 5, "target_margin": 20, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "typical_arr": "Varies", "burn_note": "Varies by business model"},
+    "Pure SaaS / Subscription Software": {"revenue": 3_000_000, "growth": 80, "ebitda": -15, "tax": 25, "capex": 3, "target_margin": 30, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 2_000_000, "burn": 150_000, "typical_arr": "£1m-£10m ARR", "burn_note": "High burn typical pre-profitability"},
+    "Enterprise Software (B2B)": {"revenue": 5_000_000, "growth": 40, "ebitda": 5, "tax": 25, "capex": 4, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 1_500_000, "burn": 120_000, "typical_arr": "£2m-£20m ARR", "burn_note": "Longer sales cycles, more stable burn"},
+    "Cybersecurity": {"revenue": 4_000_000, "growth": 60, "ebitda": -10, "tax": 25, "capex": 3, "target_margin": 28, "terminal_growth": 3.5, "rfr": 4.2, "erp": 5.5, "cash": 1_500_000, "burn": 180_000, "typical_arr": "£1m-£15m ARR", "burn_note": "R&D heavy, high burn expected"},
+    "Semiconductors & Hardware": {"revenue": 8_000_000, "growth": 25, "ebitda": 10, "tax": 25, "capex": 15, "target_margin": 22, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Mixed recurring and project revenue", "burn_note": "High capex intensity"},
+    "AI / Machine Learning": {"revenue": 2_000_000, "growth": 120, "ebitda": -30, "tax": 25, "capex": 5, "target_margin": 35, "terminal_growth": 4.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 300_000, "typical_arr": "Early ARR, rapid growth", "burn_note": "Very high compute costs"},
+    "FinTech": {"revenue": 4_000_000, "growth": 70, "ebitda": 10, "tax": 25, "capex": 4, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 1_500_000, "burn": 200_000, "typical_arr": "£1m-£10m revenue", "burn_note": "Regulatory costs significant"},
+    "InsurTech": {"revenue": 5_000_000, "growth": 45, "ebitda": 5, "tax": 25, "capex": 3, "target_margin": 20, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Mix of premium and SaaS revenue", "burn_note": "Claims reserves affect burn"},
+    "Payments & Transaction Processing": {"revenue": 6_000_000, "growth": 55, "ebitda": 15, "tax": 25, "capex": 5, "target_margin": 28, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Transaction volume driven", "burn_note": "Capital efficient at scale"},
+    "Wealth Management & Trading": {"revenue": 3_000_000, "growth": 35, "ebitda": 20, "tax": 25, "capex": 3, "target_margin": 30, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "AUM-based fees", "burn_note": "Relatively capital efficient"},
+    "HealthTech / Digital Health": {"revenue": 3_000_000, "growth": 60, "ebitda": -10, "tax": 25, "capex": 4, "target_margin": 22, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 1_200_000, "burn": 120_000, "typical_arr": "£500k-£5m ARR", "burn_note": "Clinical validation costs significant"},
+    "Biotech & Pharmaceuticals": {"revenue": 2_000_000, "growth": 50, "ebitda": -60, "tax": 25, "capex": 8, "target_margin": 35, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Pre-revenue to early revenue", "burn_note": "Very high R&D burn, long timeline"},
+    "Medical Devices": {"revenue": 4_000_000, "growth": 30, "ebitda": 5, "tax": 25, "capex": 10, "target_margin": 20, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Hardware + recurring revenue", "burn_note": "Manufacturing capex heavy"},
+    "E-Commerce (inventory-based)": {"revenue": 10_000_000, "growth": 30, "ebitda": 5, "tax": 25, "capex": 5, "target_margin": 12, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "cash": 500_000, "burn": 100_000, "typical_arr": "GMV-based", "burn_note": "Working capital intensive, thin margins"},
+    "Consumer Marketplace (asset-light)": {"revenue": 5_000_000, "growth": 55, "ebitda": -5, "tax": 25, "capex": 3, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 800_000, "burn": 120_000, "typical_arr": "Take rate on GMV", "burn_note": "Supply-demand balance key"},
+    "Consumer Apps & Social": {"revenue": 2_000_000, "growth": 80, "ebitda": -25, "tax": 25, "capex": 3, "target_margin": 20, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Ad or subscription revenue", "burn_note": "User acquisition costs high"},
+    "Consumer Goods & FMCG": {"revenue": 8_000_000, "growth": 25, "ebitda": 12, "tax": 25, "capex": 6, "target_margin": 18, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Product revenue", "burn_note": "Distribution and marketing heavy"},
+    "Food & Beverage": {"revenue": 6_000_000, "growth": 20, "ebitda": 8, "tax": 25, "capex": 6, "target_margin": 15, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Product revenue", "burn_note": "Logistics and COGS intensive"},
+    "DeepTech & Advanced Manufacturing": {"revenue": 3_000_000, "growth": 50, "ebitda": -20, "tax": 25, "capex": 12, "target_margin": 25, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 2_000_000, "burn": 250_000, "typical_arr": "Project and licence revenue", "burn_note": "High R&D and capex"},
+    "CleanTech & Renewable Energy": {"revenue": 5_000_000, "growth": 40, "ebitda": 10, "tax": 25, "capex": 15, "target_margin": 22, "terminal_growth": 3.5, "rfr": 4.2, "erp": 5.5, "cash": 1_500_000, "burn": 150_000, "typical_arr": "Project and recurring revenue", "burn_note": "Capital intensive deployment"},
+    "Logistics & Supply Chain": {"revenue": 10_000_000, "growth": 25, "ebitda": 8, "tax": 25, "capex": 8, "target_margin": 15, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Volume-based revenue", "burn_note": "Asset and working capital heavy"},
+    "Aerospace & Defence": {"revenue": 8_000_000, "growth": 15, "ebitda": 12, "tax": 25, "capex": 10, "target_margin": 18, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Government contract revenue", "burn_note": "Long contract cycles"},
+    "EdTech": {"revenue": 3_000_000, "growth": 45, "ebitda": 5, "tax": 25, "capex": 3, "target_margin": 22, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "B2B or B2C subscription", "burn_note": "Content costs significant"},
+    "PropTech & Real Estate": {"revenue": 5_000_000, "growth": 35, "ebitda": 10, "tax": 25, "capex": 4, "target_margin": 20, "terminal_growth": 2.5, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Transaction or SaaS revenue", "burn_note": "Market cycle sensitive"},
+    "Media & Entertainment": {"revenue": 5_000_000, "growth": 20, "ebitda": 10, "tax": 25, "capex": 5, "target_margin": 18, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Ad, subscription, or licensing", "burn_note": "Content production costs"},
+    "Telecoms": {"revenue": 15_000_000, "growth": 10, "ebitda": 20, "tax": 25, "capex": 18, "target_margin": 25, "terminal_growth": 1.5, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Subscription revenue", "burn_note": "Infrastructure capex very high"},
+    "Energy (Oil, Gas, Mining)": {"revenue": 20_000_000, "growth": 10, "ebitda": 25, "tax": 30, "capex": 25, "target_margin": 28, "terminal_growth": 1.5, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Commodity price linked", "burn_note": "Exploration capex very high"},
+    "Retail (Physical)": {"revenue": 10_000_000, "growth": 8, "ebitda": 6, "tax": 25, "capex": 5, "target_margin": 10, "terminal_growth": 1.5, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Store-based revenue", "burn_note": "Lease and inventory costs high"},
+    "Professional Services": {"revenue": 5_000_000, "growth": 15, "ebitda": 18, "tax": 25, "capex": 2, "target_margin": 22, "terminal_growth": 2.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Fee-based revenue", "burn_note": "People cost is main expense"},
+    "Other": {"revenue": 4_000_000, "growth": 40, "ebitda": 10, "tax": 25, "capex": 5, "target_margin": 20, "terminal_growth": 3.0, "rfr": 4.2, "erp": 5.5, "cash": 1_000_000, "burn": 150_000, "typical_arr": "Varies", "burn_note": "Varies by business model"},
 }
 
 _ALL_SECTORS = [
@@ -890,6 +890,8 @@ def _on_sector_change():
     st.session_state["inp_terminal_growth"] = d["terminal_growth"]
     st.session_state["inp_rfr"]             = d["rfr"]
     st.session_state["inp_erp"]             = d["erp"]
+    st.session_state["inp_cash"]            = d.get("cash", 1_000_000)
+    st.session_state["inp_burn"]            = d.get("burn", 150_000)
     from modules.valuation import SECTOR_MULTIPLES
     st.session_state["inp_ev_rev_multiple"] = float(
         SECTOR_MULTIPLES.get(new_sector, SECTOR_MULTIPLES["Other"])["base"]
@@ -899,10 +901,13 @@ def _on_sector_change():
 def render_home() -> None:
     render_topnav()
 
-    # ── Initialise session state defaults on first load ──
-    if "sector_select" not in st.session_state:
-        st.session_state["sector_select"] = "FinTech"
-    if "inp_revenue" not in st.session_state:
+    # ── Initialise sector-specific defaults on first load ──
+    # Uses a sentinel so this runs exactly once, regardless of whether
+    # number_input widgets have already initialised their keys to 0.
+    if "defaults_initialised" not in st.session_state:
+        st.session_state["defaults_initialised"] = True
+        if "sector_select" not in st.session_state:
+            st.session_state["sector_select"] = "FinTech"
         _d0 = SECTOR_DEFAULTS.get(st.session_state["sector_select"], SECTOR_DEFAULTS["Other"])
         st.session_state["inp_revenue"]         = _d0["revenue"]
         st.session_state["inp_growth"]          = _d0["growth"]
@@ -913,6 +918,8 @@ def render_home() -> None:
         st.session_state["inp_terminal_growth"] = _d0["terminal_growth"]
         st.session_state["inp_rfr"]             = _d0["rfr"]
         st.session_state["inp_erp"]             = _d0["erp"]
+        st.session_state["inp_cash"]            = _d0.get("cash", 1_000_000)
+        st.session_state["inp_burn"]            = _d0.get("burn", 150_000)
         from modules.valuation import SECTOR_MULTIPLES as _SM0
         st.session_state["inp_ev_rev_multiple"] = float(
             _SM0.get(st.session_state["sector_select"], _SM0["Other"])["base"]
@@ -1167,7 +1174,7 @@ setTimeout(function() {
         growth_pct=_growth_pct,
     )
     _blend = blended_valuation(_dcf, _comps)
-    _runway = int(_cash / _burn) if _burn > 0 else None
+    _runway = int(_cash / _burn) if _burn > 0 else 999
 
     # ── Layout: sidebar + main ──
     nav_col, main_col = st.columns([1.3, 5], gap="large")
@@ -1490,12 +1497,14 @@ setTimeout(function() {
             runway_burn  = float(st.session_state.get("inp_burn", 0))
             revenue_gbp  = float(st.session_state.get("inp_revenue", 0))
 
-            if runway_burn > 0:
+            if runway_burn > 0 and runway_cash > 0:
                 runway_months = int(runway_cash / runway_burn)
+            elif runway_burn == 0:
+                runway_months = 999
             else:
-                runway_months = None
+                runway_months = 0
 
-            if runway_months is None:
+            if runway_months >= 999:
                 gauge_color = GREEN
                 fig_gauge = go.Figure(go.Indicator(
                     mode="gauge+number",
@@ -1508,15 +1517,15 @@ setTimeout(function() {
                         "bar": {"color": GREEN},
                         "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
                         "steps": [
-                            {"range": [0, 6],  "color": "#FEE2E2"},
-                            {"range": [6, 12], "color": "#FEF3C7"},
-                            {"range": [12, 36], "color": "#D1FAE5"},
+                            {"range": [0, 9],  "color": "#FEE2E2"},
+                            {"range": [9, 18], "color": "#FEF3C7"},
+                            {"range": [18, 36], "color": "#D1FAE5"},
                         ],
                     },
                     number={"suffix": " ∞", "font": {"color": GREEN, "size": 48}},
                 ))
             else:
-                gauge_color = RED if runway_months <= 6 else AMBER if runway_months <= 12 else GREEN
+                gauge_color = RED if runway_months < 9 else AMBER if runway_months < 18 else GREEN
                 fig_gauge = go.Figure(go.Indicator(
                     mode="gauge+number",
                     value=runway_months,
@@ -1528,9 +1537,9 @@ setTimeout(function() {
                         "bar": {"color": gauge_color},
                         "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
                         "steps": [
-                            {"range": [0, 6],  "color": "#FEE2E2"},
-                            {"range": [6, 12], "color": "#FEF3C7"},
-                            {"range": [12, 36], "color": "#D1FAE5"},
+                            {"range": [0, 9],  "color": "#FEE2E2"},
+                            {"range": [9, 18], "color": "#FEF3C7"},
+                            {"range": [18, 36], "color": "#D1FAE5"},
                         ],
                         "threshold": {"line": {"color": BLUE, "width": 3}, "value": 18},
                     },
@@ -1546,10 +1555,10 @@ setTimeout(function() {
 
             st.markdown("<hr/>", unsafe_allow_html=True)
 
-            if runway_months is None:
-                _recommended = revenue_gbp * 0.5
-            else:
+            if runway_burn > 0:
                 _recommended = runway_burn * 18
+            else:
+                _recommended = revenue_gbp * 0.3
             _dilution     = 0.20 if _stage == "Seed" else 0.15 if _stage == "Series A" else 0.12
             _post_money   = _blend["base"] + _recommended
 
@@ -1600,7 +1609,7 @@ setTimeout(function() {
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("Cash runway bridge")
 
-            if runway_burn > 0 and runway_months is not None:
+            if runway_burn > 0 and runway_months < 999:
                 _mo = list(range(0, min(runway_months + 1, 37)))
                 _cv = [max(runway_cash - runway_burn * m, 0) for m in _mo]
                 fig_burn = go.Figure()
@@ -1632,10 +1641,10 @@ setTimeout(function() {
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("Fundraising readiness checklist")
             _tips = [
-                ("Runway",            runway_months is not None and runway_months >= 18,
-                 f"{runway_months} months remaining" if (runway_months is not None and runway_months >= 18)
-                 else ("∞ — no burn entered" if runway_months is None
-                       else f"Only {runway_months} months — raise urgently")),
+                ("Runway",            runway_months >= 18,
+                 ("∞ — profitable / no burn" if runway_months >= 999
+                  else f"{runway_months} months remaining" if runway_months >= 18
+                  else f"Only {runway_months} months — raise urgently")),
                 ("Revenue traction",  _revenue > 0,  fmt_gbp(_revenue) + " ARR"),
                 ("Growth rate",       _growth_pct >= 50, f"{_growth_pct}% YoY growth"),
                 ("EBITDA visibility", _ebitda_margin >= 0, f"{_ebitda_margin}% margin"),
