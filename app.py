@@ -745,7 +745,10 @@ def _load_preset(name: str) -> None:
     # Step 3: Snapshot into _run_ keys immediately so results page is ready
     _snapshot_run_keys()
 
-    # Step 4: Stay on home page
+    # Step 4: Flag so on_sector_change callback skips overwriting
+    st.session_state["_preset_loaded"] = True
+
+    # Step 5: Stay on home page
     st.session_state["page"] = "home"
 
 
@@ -974,7 +977,6 @@ def render_topnav(company: str = "") -> None:
 # HOME PAGE
 # ══════════════════════════════════════════════════════════════════════════════
 def _on_sector_change():
-    print(f"[DEBUG] on_sector_change fired. _preset_loaded = {st.session_state.get('_preset_loaded', 'NOT SET')}")
     if st.session_state.pop("_preset_loaded", False):
         return  # Skip overwriting — preset values take priority
     new_sector = st.session_state["sector_select"]
