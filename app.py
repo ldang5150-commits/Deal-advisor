@@ -185,30 +185,36 @@ _DEFAULTS = {
     "inp_stage":    "Series A",
     "inp_geo":      "UK",
     "inp_revenue":  4_000_000,
-    "inp_growth":   80,
-    "inp_ebitda":   15,
+    "inp_growth":   70,
+    "inp_ebitda":   10,
     "inp_cash":     1_500_000,
     "inp_burn":     200_000,
     "inp_debt":     0,
     "inp_cod":      8,
     "inp_openai":   "",
-    # DCF assumption overrides
+    # DCF assumptions — must be set at module level so results page always has them
+    "inp_tax":           25,
+    "inp_capex":         4,
+    "inp_target_margin": 25,
+    "inp_terminal_growth": 3.0,
+    "inp_rfr":           4.2,
+    "inp_erp":           5.5,
+    "inp_ev_rev_multiple": 7.0,
+    # legacy keys kept for backward compat
     "inp_tax_rate":      25,
     "inp_capex_pct":     5,
     "inp_nwc_pct":       3,
     "inp_da_pct":        3.0,
-    "inp_target_margin": 25,
     "inp_terminal_g":    3.0,
     "inp_tv_method":     "Gordon Growth Model",
     "inp_exit_multiple": 12.0,
     # WACC
     "inp_use_custom_wacc": False,
     "inp_custom_wacc":     28.0,
-    "inp_rfr":             4.2,
-    "inp_erp":             5.5,
-    "inp_beta":            None,
     "inp_wacc_kd":         8.0,
     "inp_wacc_debt":       0,
+    # Carry-forward for fundraising tab
+    "blended_base_ev": 0.0,
 }
 for _k, _v in _DEFAULTS.items():
     if _k not in st.session_state:
@@ -1174,6 +1180,7 @@ setTimeout(function() {
         growth_pct=_growth_pct,
     )
     _blend = blended_valuation(_dcf, _comps)
+    st.session_state["blended_base_ev"] = float(_blend.get("base", 0))
     _runway = int(_cash / _burn) if _burn > 0 else 999
 
     # ── Layout: sidebar + main ──
@@ -1492,17 +1499,55 @@ setTimeout(function() {
                 f"Runway, raise sizing, and readiness · {company}"
             )
 
-            # Direct session state reads — always reflects current inputs
-            runway_cash  = float(st.session_state.get("inp_cash", 0))
-            runway_burn  = float(st.session_state.get("inp_burn", 0))
-            revenue_gbp  = float(st.session_state.get("inp_revenue", 0))
+            # === FUNDRAISING INPUTS — always read directly from session state ===
+            _f_cash    = float(st.session_state.get("inp_cash", 1_500_000))
+            _f_burn    = float(st.session_state.get("inp_burn", 200_000))
+            _f_revenue = float(st.session_state.get("inp_revenue", 4_000_000))
+            _f_growth  = float(st.session_state.get("inp_growth", 70))
+            _f_ebitda  = float(st.session_state.get("inp_ebitda", 10))
+            _f_stage   = str(st.session_state.get("inp_stage", "Series A"))
 
-            if runway_burn > 0 and runway_cash > 0:
-                runway_months = int(runway_cash / runway_burn)
-            elif runway_burn == 0:
+            # Runway
+            if _f_burn > 0 and _f_cash > 0:
+                runway_months = int(_f_cash / _f_burn)
+            elif _f_burn == 0:
                 runway_months = 999
             else:
                 runway_months = 0
+
+            # Recommended raise
+            if _f_burn > 0:
+                _f_rec_raise = _f_burn * 18
+            else:
+                _f_rec_raise = _f_revenue * 0.3
+            _f_rec_raise = max(_f_rec_raise, 100_000)
+
+            # Blended EV (stored after valuation runs)
+            _f_blended_ev = float(st.session_state.get("blended_base_ev", _f_revenue * 7))
+            if _f_blended_ev <= 0:
+                _f_blended_ev = _f_revenue * 7
+
+            # Post-money and dilution
+            _f_post_money = _f_blended_ev + _f_rec_raise
+            if _f_post_money > 0:
+                _f_dilution = (_f_rec_raise / _f_post_money) * 100
+                _f_dilution = max(8.0, min(35.0, _f_dilution))
+            else:
+                _f_dilution = 15.0
+
+            # Runway display helpers
+            if runway_months >= 999:
+                runway_text  = "Profitable — no burn"
+                runway_color_str = "green"
+            elif runway_months < 9:
+                runway_text  = f"Only {runway_months} months — raise urgently"
+                runway_color_str = "red"
+            elif runway_months < 18:
+                runway_text  = f"{runway_months} months — plan your raise"
+                runway_color_str = "orange"
+            else:
+                runway_text  = f"{runway_months} months — healthy runway"
+                runway_color_str = "green"
 
             if runway_months >= 999:
                 gauge_color = GREEN
@@ -1555,17 +1600,10 @@ setTimeout(function() {
 
             st.markdown("<hr/>", unsafe_allow_html=True)
 
-            if runway_burn > 0:
-                _recommended = runway_burn * 18
-            else:
-                _recommended = revenue_gbp * 0.3
-            _dilution     = 0.20 if _stage == "Seed" else 0.15 if _stage == "Series A" else 0.12
-            _post_money   = _blend["base"] + _recommended
-
             _fm1, _fm2, _fm3 = st.columns(3)
-            _fm1.metric("Recommended raise", fmt_gbp(_recommended))
-            _fm2.metric("Estimated dilution", f"{_dilution*100:.0f}%")
-            _fm3.metric("Post-money (base)",  fmt_gbp(_post_money))
+            _fm1.metric("Recommended raise", fmt_gbp(_f_rec_raise))
+            _fm2.metric("Estimated dilution", f"{_f_dilution:.1f}%")
+            _fm3.metric("Post-money (base)",  fmt_gbp(_f_post_money))
 
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("Suggested use of funds")
@@ -1585,7 +1623,7 @@ setTimeout(function() {
             _fund_alloc = _SECTOR_FUNDS.get(_sector, _SECTOR_FUNDS["Other"])
             _cats = list(_fund_alloc.keys())
             _weights = [v / 100 for v in _fund_alloc.values()]
-            _amounts = [_recommended * w for w in _weights]
+            _amounts = [_f_rec_raise * w for w in _weights]
 
             fig_pie = go.Figure(go.Pie(
                 labels=_cats, values=_amounts, hole=0.45,
@@ -1594,7 +1632,7 @@ setTimeout(function() {
                 textfont=dict(color="#0F172A", size=12),
             ))
             fig_pie.update_layout(
-                title=f"Use of {fmt_gbp(_recommended)} raise",
+                title=f"Use of {fmt_gbp(_f_rec_raise)} raise",
                 showlegend=False, **{k: v for k, v in PLOTLY_BASE.items() if k not in ("legend",)},
             )
             st.plotly_chart(fig_pie, use_container_width=True)
@@ -1602,7 +1640,7 @@ setTimeout(function() {
             uof_df = pd.DataFrame({
                 "Category":   _cats,
                 "Allocation": [f"{w*100:.0f}%" for w in _weights],
-                "Amount (£)": [f"£{a:,.0f}" for a in _amounts],
+                "Amount (£)": [f"£{_f_rec_raise * w:,.0f}" for w in _weights],
             })
             st.dataframe(uof_df, hide_index=True, use_container_width=True)
 
@@ -1645,9 +1683,9 @@ setTimeout(function() {
                  ("∞ — profitable / no burn" if runway_months >= 999
                   else f"{runway_months} months remaining" if runway_months >= 18
                   else f"Only {runway_months} months — raise urgently")),
-                ("Revenue traction",  _revenue > 0,  fmt_gbp(_revenue) + " ARR"),
-                ("Growth rate",       _growth_pct >= 50, f"{_growth_pct}% YoY growth"),
-                ("EBITDA visibility", _ebitda_margin >= 0, f"{_ebitda_margin}% margin"),
+                ("Revenue traction",  _f_revenue > 0,  fmt_gbp(_f_revenue) + " ARR"),
+                ("Growth rate",       _f_growth >= 50, f"{_f_growth}% YoY growth"),
+                ("EBITDA visibility", _f_ebitda >= 0, f"{_f_ebitda}% margin"),
             ]
             for _lbl, _ok, _note in _tips:
                 _color = "#10B981" if _ok else "#EF4444"
