@@ -691,12 +691,9 @@ def _load_preset(name: str) -> None:
         st.session_state[k] = v
     st.session_state["inp_stage"] = "Growth"
     st.session_state["inp_sector"] = presets[name].get("sector_select", "FinTech")
-    # Snapshot into _run_ keys so results page reads correct values immediately
-    _snapshot_run_keys()
     st.session_state.pop("blended_base_ev", None)
     st.session_state.pop("defaults_initialised", None)
-    st.session_state["active_tab"] = "Valuation"
-    st.session_state["page"] = "results"
+    st.session_state["page"] = "home"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
