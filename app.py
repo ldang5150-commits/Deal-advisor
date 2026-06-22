@@ -721,21 +721,31 @@ def _load_preset(name: str) -> None:
             "inp_horizon": 5,
         },
     }
-    # Delete widget keys first so Streamlit reinitialises them from new values
-    for k in _WIDGET_KEYS:
+    # Step 1: Wipe ALL existing widget, run, and preset keys
+    _all_to_delete = list(set(
+        _WIDGET_KEYS
+        + list(presets[name].keys())
+        + ["blended_base_ev", "defaults_initialised", "_preset_loaded",
+           "sector_select", "inp_sector", "inp_stage", "inp_company",
+           "inp_revenue", "inp_growth", "inp_ebitda", "inp_cash",
+           "inp_burn", "inp_geo", "inp_ev_rev_multiple",
+           "_run_revenue", "_run_growth", "_run_ebitda", "_run_cash",
+           "_run_burn", "_run_geo", "_run_tax", "_run_capex",
+           "_run_target_margin", "_run_terminal_growth", "_run_rfr",
+           "_run_erp", "_run_wacc_kd", "_run_wacc_debt",
+           "_run_ev_multiple", "_run_name", "_run_stage", "_run_sector"]
+    ))
+    for k in _all_to_delete:
         st.session_state.pop(k, None)
-    # First pass
+
+    # Step 2: Write preset values directly
     for k, v in presets[name].items():
         st.session_state[k] = v
-    st.session_state["inp_stage"] = "Growth"
-    st.session_state["inp_sector"] = presets[name].get("sector_select", "FinTech")
-    st.session_state["_preset_loaded"] = True
-    # Second pass — guarantees sector defaults cannot overwrite preset values
-    for k, v in presets[name].items():
-        st.session_state[k] = v
-    st.session_state["inp_stage"] = "Growth"
-    st.session_state.pop("blended_base_ev", None)
-    st.session_state.pop("defaults_initialised", None)
+
+    # Step 3: Snapshot into _run_ keys immediately so results page is ready
+    _snapshot_run_keys()
+
+    # Step 4: Stay on home page
     st.session_state["page"] = "home"
 
 
