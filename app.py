@@ -1236,7 +1236,10 @@ setTimeout(function() {
         growth_pct=_growth_pct,
     )
     _blend = blended_valuation(_dcf, _comps)
-    st.session_state["blended_base_ev"] = float(_blend.get("base", 0))
+    _blended_base = float(_blend.get("base", 0))
+    if _blended_base <= 0:
+        _blended_base = _revenue * 7
+    st.session_state["blended_base_ev"] = _blended_base
     _runway = int(_cash / _burn) if _burn > 0 else 999
 
     # ── Layout: sidebar + main ──
@@ -1506,20 +1509,29 @@ setTimeout(function() {
                     x=_wf_x,
                     y=_wf_y,
                     connector=dict(line=dict(color="#E2E8F0", width=1)),
-                    increasing=dict(marker=dict(color="#10B981")),
-                    decreasing=dict(marker=dict(color="#EF4444")),
-                    totals=dict(marker=dict(color="#1D4ED8")),
+                    increasing=dict(marker=dict(color="#10B981",
+                                                line=dict(color="#059669", width=1))),
+                    decreasing=dict(marker=dict(color="#EF4444",
+                                                line=dict(color="#DC2626", width=1))),
+                    totals=dict(marker=dict(color="#1D4ED8",
+                                            line=dict(color="#1E40AF", width=1))),
                     text=[fmt_gbp(abs(v)) for v in _wf_y],
                     textposition="outside",
+                    textfont={"color": "#0F172A", "size": 12},
                 ))
                 fig_wf.update_layout(
-                    paper_bgcolor="#F8FAFC",
-                    plot_bgcolor="#F8FAFC",
-                    height=380,
-                    margin=dict(l=20, r=20, t=20, b=20),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    height=400,
+                    margin=dict(l=20, r=20, t=30, b=60),
                     showlegend=False,
-                    yaxis=dict(showgrid=False, zeroline=True, zerolinecolor="#E2E8F0"),
-                    xaxis=dict(showgrid=False),
+                    font={"color": "#0F172A", "size": 12},
+                    yaxis=dict(showgrid=True, gridcolor="#F1F5F9",
+                               zeroline=True, zerolinecolor="#E2E8F0",
+                               tickfont={"color": "#64748B"}),
+                    xaxis=dict(showgrid=False,
+                               tickfont={"color": "#0F172A", "size": 11},
+                               tickangle=-15),
                 )
                 st.plotly_chart(fig_wf, use_container_width=True, config={"displayModeBar": False})
 
@@ -1578,9 +1590,7 @@ setTimeout(function() {
             _f_raise = max(_f_raise, 100_000)
 
             # ── Blended EV & post-money ──────────────────────────────────────
-            _f_ev = float(st.session_state.get("blended_base_ev", _f_rev * 7))
-            if _f_ev <= 0:
-                _f_ev = _f_rev * 7
+            _f_ev = _blended_base if _blended_base > 0 else _f_rev * 7
             _f_post = _f_ev + _f_raise
             _f_dil  = round(max(8.0, min(30.0,
                 (_f_raise / _f_post * 100) if _f_post > 0 else 15.0)), 1)
@@ -1603,36 +1613,42 @@ setTimeout(function() {
                 _f_gauge_color = GREEN
                 _f_runway_msg  = f"{_f_runway} months — healthy runway"
 
-            fig_gauge = go.Figure(go.Indicator(
-                mode="gauge+number",
-                value=_f_gauge_val,
-                domain={"x": [0, 1], "y": [0, 1]},
-                title={"text": "Runway (months)", "font": {"color": "#64748B", "size": 13}},
-                gauge={
-                    "axis": {"range": [0, 36], "tickcolor": "#94A3B8",
-                             "tickfont": {"color": "#94A3B8"}},
-                    "bar": {"color": _f_gauge_color},
-                    "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
-                    "steps": [
-                        {"range": [0, 9],  "color": "#FEE2E2"},
-                        {"range": [9, 18], "color": "#FEF3C7"},
-                        {"range": [18, 36], "color": "#D1FAE5"},
-                    ],
-                    "threshold": {"line": {"color": BLUE, "width": 3}, "value": 18},
-                },
-                number={"suffix": (" mo" if _f_runway < 999 else ""),
-                        "font": {"color": _f_gauge_color, "size": 48}},
-            ))
             if _f_runway >= 999:
-                fig_gauge.add_annotation(
-                    text="∞", x=0.5, y=0.45, showarrow=False,
-                    font=dict(size=56, color=GREEN), xref="paper", yref="paper")
-            fig_gauge.update_layout(
-                paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
-                font=dict(color="#0F172A"), height=260,
-                margin=dict(l=20, r=20, t=40, b=20),
-            )
-            st.plotly_chart(fig_gauge, use_container_width=True)
+                st.markdown("""
+<div style="text-align:center; padding: 40px 0;">
+    <div style="font-size: 72px; font-weight: 600;
+                color: #10B981; line-height:1;">∞</div>
+    <div style="font-size: 14px; color: #64748B;
+                margin-top: 8px;">Runway (months)</div>
+    <div style="font-size: 13px; color: #10B981;
+                margin-top: 4px;">Profitable — no burn</div>
+</div>""", unsafe_allow_html=True)
+            else:
+                fig_gauge = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=_f_gauge_val,
+                    domain={"x": [0, 1], "y": [0, 1]},
+                    title={"text": "Runway (months)", "font": {"color": "#64748B", "size": 13}},
+                    gauge={
+                        "axis": {"range": [0, 36], "tickcolor": "#94A3B8",
+                                 "tickfont": {"color": "#94A3B8"}},
+                        "bar": {"color": _f_gauge_color},
+                        "bgcolor": "#F1F5F9", "bordercolor": "#E2E8F0",
+                        "steps": [
+                            {"range": [0, 9],  "color": "#FEE2E2"},
+                            {"range": [9, 18], "color": "#FEF3C7"},
+                            {"range": [18, 36], "color": "#D1FAE5"},
+                        ],
+                        "threshold": {"line": {"color": BLUE, "width": 3}, "value": 18},
+                    },
+                    number={"suffix": " mo", "font": {"color": _f_gauge_color, "size": 48}},
+                ))
+                fig_gauge.update_layout(
+                    paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
+                    font=dict(color="#0F172A"), height=260,
+                    margin=dict(l=20, r=20, t=40, b=20),
+                )
+                st.plotly_chart(fig_gauge, use_container_width=True)
 
             st.markdown("<hr/>", unsafe_allow_html=True)
 
@@ -1757,7 +1773,8 @@ setTimeout(function() {
             fig_dil.add_hline(y=20, line_dash="dash", line_color="#F59E0B",
                                annotation_text="Typical floor", annotation_position="top right")
             # Mark current stage with a highlighted point on the line
-            _stage_idx = {"Pre-Seed": 0, "Seed": 1, "Series A": 2, "Series B": 3, "Series C+": 4, "Growth": 4}.get(_f_stage, 0)
+            _stage_map = {"Pre-Seed": 1, "Seed": 1, "Series A": 2, "Series B": 3, "Series C+": 4, "Growth": 4}
+            _stage_idx = _stage_map.get(_f_stage, 2)
             if _stage_idx > 0:
                 fig_dil.add_trace(go.Scatter(
                     x=[_rounds[_stage_idx]], y=[_ownership[_stage_idx]],
@@ -1779,10 +1796,16 @@ setTimeout(function() {
 
             _dil_rows = []
             _own2 = 100.0
-            for _rnd, _d in zip(_rounds, _dilutions):
+            _ev_for_table = _blended_base if _blended_base > 0 else _f_rev * 7
+            for _i, (_rnd, _d) in enumerate(zip(_rounds, _dilutions)):
                 _own2 = _own2 * (1 - _d / 100)
-                _implied = _own2 / 100 * _f_ev
-                _dil_rows.append({"Round": _rnd, "Dilution sold": f"{_d}%", "Founder ownership": f"{_own2:.1f}%", "Implied stake value": fmt_gbp(_implied)})
+                _implied = _own2 / 100 * _ev_for_table
+                _dil_rows.append({
+                    "Round": ("▶ " if _i == _stage_idx else "") + _rnd,
+                    "Dilution sold": f"{_d}%",
+                    "Founder ownership": f"{_own2:.1f}%",
+                    "Implied stake value": fmt_gbp(_implied),
+                })
             st.dataframe(pd.DataFrame(_dil_rows), use_container_width=True, hide_index=True)
 
             st.markdown("<hr/>", unsafe_allow_html=True)
