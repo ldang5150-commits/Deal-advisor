@@ -1498,8 +1498,8 @@ def render_results() -> None:
                 _tax_hit = _np1 - _eb1
                 _capex_nwc = (_fcfs[0] if _fcfs else 0) - _np1
 
-                _wf_x = ["Revenue (Y1)", "EBITDA margin", "Tax (NOPAT)", "CapEx + NWC", "PV of FCFs", "Terminal value", "Enterprise value"]
-                _wf_y = [_rv1, _eb1 - _rv1, _tax_hit, _capex_nwc, _pv_fcfs, _pv_tv, 0]
+                _ev_base    = _pv_fcfs + _pv_tv
+                _wf_y       = [_rv1, _eb1 - _rv1, _tax_hit, _capex_nwc, _pv_fcfs, _pv_tv, _ev_base]
                 _wf_measure = ["relative", "relative", "relative", "relative", "absolute", "relative", "total"]
 
                 fig_wf = go.Figure(go.Waterfall(
@@ -1514,15 +1514,24 @@ def render_results() -> None:
                                                 line=dict(color="#DC2626", width=1))),
                     totals=dict(marker=dict(color="#1D4ED8",
                                             line=dict(color="#1E40AF", width=1))),
-                    text=[fmt_gbp(abs(v)) for v in _wf_y],
+                    text=[
+                        fmt_gbp(abs(_rv1)),
+                        fmt_gbp(abs(_eb1 - _rv1)),
+                        fmt_gbp(abs(_tax_hit)),
+                        fmt_gbp(abs(_capex_nwc)),
+                        fmt_gbp(abs(_pv_fcfs)),
+                        fmt_gbp(abs(_pv_tv)),
+                        fmt_gbp(abs(_ev_base)),
+                    ],
                     textposition="outside",
                     textfont={"color": "#0F172A", "size": 12},
+                    cliponaxis=False,
                 ))
                 fig_wf.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)",
                     height=400,
-                    margin=dict(l=20, r=20, t=30, b=60),
+                    margin=dict(t=40, b=80, l=60, r=40),
                     showlegend=False,
                     font={"color": "#0F172A", "size": 12},
                     yaxis=dict(showgrid=True, gridcolor="#F1F5F9",
