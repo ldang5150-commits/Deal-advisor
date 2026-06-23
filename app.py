@@ -1501,7 +1501,8 @@ def render_results() -> None:
             st.markdown("<hr/>", unsafe_allow_html=True)
             overline("5-year revenue projection")
 
-            _proj = five_year_projection(_revenue, _growth_pct, _ebitda_margin)
+            _proj = five_year_projection(_revenue, _growth_pct, _ebitda_margin,
+                                        target_ebitda_margin=_target_margin)
 
             # Styled HTML table
             _trows = ""
