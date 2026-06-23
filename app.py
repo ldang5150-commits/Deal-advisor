@@ -1470,22 +1470,10 @@ def render_results() -> None:
 
             with _dr:
                 overline("Comparable multiples — three scenarios")
-                _sector_mult = {
-                    "FinTech": {"low":4.0,"base":7.0,"high":12.0},
-                    "SaaS": {"low":5.0,"base":9.0,"high":15.0},
-                    "HealthTech": {"low":3.5,"base":6.0,"high":10.0},
-                    "EdTech": {"low":2.5,"base":4.5,"high":8.0},
-                    "CleanTech": {"low":3.0,"base":5.5,"high":9.0},
-                    "E-Commerce": {"low":1.5,"base":3.0,"high":5.5},
-                    "DeepTech": {"low":4.0,"base":8.0,"high":14.0},
-                    "Cybersecurity": {"low":5.0,"base":9.5,"high":16.0},
-                    "MarketPlace": {"low":2.0,"base":4.0,"high":7.0},
-                    "Other": {"low":2.0,"base":4.0,"high":7.0},
-                }
-                _m = _sector_mult.get(_sector, _sector_mult["Other"])
+                _m = _comps.get("multiples", {"low": 0, "base": 0, "high": 0})
                 comps_df = pd.DataFrame({
                     "Scenario": ["Conservative", "Base", "Optimistic"],
-                    "EV/Rev":   [_m["low"], _m["base"], _m["high"]],
+                    "EV/Rev":   [round(_m["low"], 2), round(_m["base"], 2), round(_m["high"], 2)],
                     "Value (£m)": [
                         round(_comps["low"]/1e6, 1),
                         round(_comps["base"]/1e6, 1),
