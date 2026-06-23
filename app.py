@@ -1864,9 +1864,11 @@ def render_results() -> None:
                 name="Founder ownership",
             ))
             fig_dil.add_hline(y=50, line_dash="dash", line_color="#EF4444",
-                               annotation_text="Control threshold", annotation_position="top right")
+                               annotation_text="Control threshold", annotation_position="top right",
+                               annotation=dict(xanchor="right", yanchor="bottom"))
             fig_dil.add_hline(y=20, line_dash="dash", line_color="#F59E0B",
-                               annotation_text="Typical floor", annotation_position="top right")
+                               annotation_text="Typical floor", annotation_position="top right",
+                               annotation=dict(xanchor="right", yanchor="bottom"))
             # Mark current stage with a highlighted point on the line
             _stage_map = {"Pre-Seed": 1, "Seed": 1, "Series A": 2, "Series B": 3, "Series C+": 4, "Growth": 4}
             _stage_idx = _stage_map.get(_f_stage, 2)
@@ -1876,7 +1878,7 @@ def render_results() -> None:
                     mode="markers+text",
                     marker=dict(color="#1D4ED8", size=14, symbol="circle"),
                     text=["Current stage"],
-                    textposition="top center",
+                    textposition="top right",
                     textfont=dict(size=11, color="#64748B"),
                     showlegend=False,
                 ))
@@ -1995,7 +1997,7 @@ def render_results() -> None:
             totals        = [m.score        for m in match_list]
 
             fig = go.Figure()
-            _lbl = lambda scores: [str(v) if v >= 5 else "" for v in scores]
+            _lbl = lambda scores: [str(v) if v >= 12 else "" for v in scores]
             fig.add_trace(go.Bar(name="Sector /35",    y=names, x=sector_scores, orientation="h", marker_color="#1F2937", text=_lbl(sector_scores), textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
             fig.add_trace(go.Bar(name="Stage /35",     y=names, x=stage_scores,  orientation="h", marker_color="#EAB308", text=_lbl(stage_scores),  textposition="inside", insidetextanchor="middle", textfont=dict(color="#1F2937", size=11)))
             fig.add_trace(go.Bar(name="Geography /20", y=names, x=geo_scores,    orientation="h", marker_color="#F97316", text=_lbl(geo_scores),    textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
