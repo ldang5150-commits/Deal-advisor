@@ -199,6 +199,10 @@ def _geo_score(investor_geos: str, company_geo: str,
         else:
             return 12, f"Active in {company_geo} among {n} regions"
 
+    # Global company: any investor can potentially participate; partial score
+    if cg == "global":
+        return 8, "Global company — investor may consider outside primary mandate"
+
     return 0, "Geography outside investment mandate"
 
 
@@ -226,10 +230,21 @@ def _cheque_score(min_cheque: float, max_cheque: float,
     return 6, 0, "Raise slightly outside typical range but within reach"
 
 
+_STAGE_RAISE_CAP = {
+    "Pre-Seed":  500_000,
+    "Seed":      2_000_000,
+    "Series A":  10_000_000,
+    "Series B":  30_000_000,
+    "Series C+": 80_000_000,
+    "Series C":  80_000_000,
+    "Growth":    150_000_000,
+}
+
 def score_investors(df: pd.DataFrame, sector: str, stage: str,
                     geography: str, revenue: float) -> pd.DataFrame:
     """Score each investor and return sorted DataFrame with full rationale fields."""
-    estimated_raise = revenue * 0.30
+    cap = _STAGE_RAISE_CAP.get(stage, 50_000_000)
+    estimated_raise = min(revenue * 0.30, cap)
     results = []
 
     for _, row in df.iterrows():

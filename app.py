@@ -1995,10 +1995,11 @@ def render_results() -> None:
             totals        = [m.score        for m in match_list]
 
             fig = go.Figure()
-            fig.add_trace(go.Bar(name="Sector /35",    y=names, x=sector_scores, orientation="h", marker_color="#1F2937", text=sector_scores, textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
-            fig.add_trace(go.Bar(name="Stage /35",     y=names, x=stage_scores,  orientation="h", marker_color="#EAB308", text=stage_scores,  textposition="inside", insidetextanchor="middle", textfont=dict(color="#1F2937", size=11)))
-            fig.add_trace(go.Bar(name="Geography /20", y=names, x=geo_scores,    orientation="h", marker_color="#F97316", text=geo_scores,    textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
-            fig.add_trace(go.Bar(name="Cheque /10",    y=names, x=cheque_scores, orientation="h", marker_color="#65A30D", text=cheque_scores, textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
+            _lbl = lambda scores: [str(v) if v >= 5 else "" for v in scores]
+            fig.add_trace(go.Bar(name="Sector /35",    y=names, x=sector_scores, orientation="h", marker_color="#1F2937", text=_lbl(sector_scores), textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
+            fig.add_trace(go.Bar(name="Stage /35",     y=names, x=stage_scores,  orientation="h", marker_color="#EAB308", text=_lbl(stage_scores),  textposition="inside", insidetextanchor="middle", textfont=dict(color="#1F2937", size=11)))
+            fig.add_trace(go.Bar(name="Geography /20", y=names, x=geo_scores,    orientation="h", marker_color="#F97316", text=_lbl(geo_scores),    textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
+            fig.add_trace(go.Bar(name="Cheque /10",    y=names, x=cheque_scores, orientation="h", marker_color="#65A30D", text=_lbl(cheque_scores), textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
 
             for name, total in zip(names, totals):
                 fig.add_annotation(x=total + 1, y=name, text="<b>" + str(total) + "</b>", showarrow=False, xanchor="left", font=dict(size=13, color="#1F2937"))
