@@ -636,6 +636,8 @@ _WIDGET_KEYS = [
 def _snapshot_run_keys() -> None:
     """Copy current widget values into _run_ keys so results page reads them correctly."""
     ss = st.session_state
+    print(f"[SNAP] inp_revenue = {ss.get('inp_revenue')}")
+    print(f"[SNAP] inp_ev_rev_multiple = {ss.get('inp_ev_rev_multiple')}")
     ss["_run_revenue"]        = float(ss.get("inp_revenue",        4_000_000))
     ss["_run_growth"]         = float(ss.get("inp_growth",                70))
     ss["_run_ebitda"]         = float(ss.get("inp_ebitda",               10))
@@ -760,6 +762,13 @@ def _load_preset(name: str) -> None:
 
     # Step 4: Flag so on_sector_change callback skips overwriting
     st.session_state["_preset_loaded"] = True
+
+    print(f"[PRESET END] name={name}")
+    print(f"[PRESET END] inp_revenue in ss = {st.session_state.get('inp_revenue')}")
+    print(f"[PRESET END] inp_ev_rev_multiple in ss = {st.session_state.get('inp_ev_rev_multiple')}")
+    print(f"[PRESET END] _run_revenue in ss = {st.session_state.get('_run_revenue')}")
+    print(f"[PRESET END] _run_ev_rev_multiple in ss = {st.session_state.get('_run_ev_multiple')}")
+    print(f"[PRESET END] _active_preset ev_rev = {st.session_state.get('_active_preset', {}).get('inp_ev_rev_multiple')}")
 
     # Step 5: Stay on home page
     st.session_state["page"] = "home"
@@ -1251,6 +1260,9 @@ def render_results() -> None:
     # Priority: _run_ keys (snapshotted at click) → _active_preset (demo preset) → inp_ keys → default
     ss = st.session_state
     _active = ss.get("_active_preset", {})
+    print(f"[RENDER] _run_revenue = {ss.get('_run_revenue')}")
+    print(f"[RENDER] _run_ev_rev_multiple = {ss.get('_run_ev_multiple')}")
+    print(f"[RENDER] _active ev_rev = {_active.get('inp_ev_rev_multiple')}")
 
     def _r(run_key, preset_key, inp_key, default):
         return ss.get(run_key) or _active.get(preset_key) or ss.get(inp_key) or default
@@ -1269,7 +1281,8 @@ def render_results() -> None:
     _target_margin = float(_r("_run_target_margin",  "inp_target_margin",  "inp_target_margin",         25))
     _terminal_g    = float(_r("_run_terminal_growth","inp_terminal_growth","inp_terminal_growth",       3.0))
     _ev_rev        = float(ss.get("_run_ev_multiple") or _active.get("inp_ev_rev_multiple") or ss.get("inp_ev_rev_multiple") or 0.0)
-    print(f"[EV RUNTIME] ev_rev used = {_ev_rev}")
+    print(f"[RENDER] _rev final = {_revenue}")
+    print(f"[RENDER] _ev_rev final = {_ev_rev}")
     _rfr           = float(_r("_run_rfr",            "inp_rfr",            "inp_rfr",                   4.2))
     _erp           = float(_r("_run_erp",            "inp_erp",            "inp_erp",                   5.5))
     _wacc_debt     = float(_r("_run_wacc_debt",      "inp_wacc_debt",      "inp_wacc_debt",               0))
