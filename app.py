@@ -750,6 +750,11 @@ def _load_preset(name: str) -> None:
     for k, v in presets[name].items():
         st.session_state[k] = v
 
+    # Step 2c: Store preset as canonical source of truth for render_results()
+    _active = presets[name].copy()
+    _active["_name"] = name
+    st.session_state["_active_preset"] = _active
+
     # Step 3: Snapshot into _run_ keys immediately so results page is ready
     _snapshot_run_keys()
 
@@ -1243,32 +1248,31 @@ def render_results() -> None:
         </script>
         """, height=0)
     # ── Read snapshotted values (set by Run analysis / demo buttons) ──────────
-    # _run_ keys are written at the moment the user clicks Run or a demo button,
-    # capturing the actual widget state. inp_ keys are the fallback for first load.
+    # Priority: _run_ keys (snapshotted at click) → _active_preset (demo preset) → inp_ keys → default
     ss = st.session_state
-    def _r(run_key, inp_key, default):
-        return ss.get(run_key, ss.get(inp_key, default))
+    _active = ss.get("_active_preset", {})
 
-    _revenue       = float(_r("_run_revenue",        "inp_revenue",        4_000_000))
-    _growth_pct    = float(_r("_run_growth",         "inp_growth",                70))
-    _ebitda_margin = float(_r("_run_ebitda",         "inp_ebitda",               10))
-    _cash          = float(_r("_run_cash",           "inp_cash",          1_500_000))
-    _burn          = float(_r("_run_burn",           "inp_burn",            200_000))
-    _sector        = str(_r("_run_sector",           "sector_select",       "FinTech"))
-    _stage         = str(_r("_run_stage",            "inp_stage",         "Series A"))
-    _geography     = str(_r("_run_geo",              "inp_geo",                  "UK"))
-    _name          = str(_r("_run_name",             "inp_company",               ""))
-    _tax           = float(_r("_run_tax",            "inp_tax",                   25))
-    _capex         = float(_r("_run_capex",          "inp_capex",                  5))
-    _target_margin = float(_r("_run_target_margin",  "inp_target_margin",         25))
-    _terminal_g    = float(_r("_run_terminal_growth","inp_terminal_growth",       3.0))
-    _ev_rev = st.session_state.get("_run_ev_multiple") or \
-              st.session_state.get("inp_ev_rev_multiple") or 0.0
-    _ev_rev = float(_ev_rev)
+    def _r(run_key, preset_key, inp_key, default):
+        return ss.get(run_key) or _active.get(preset_key) or ss.get(inp_key) or default
+
+    _revenue       = float(_r("_run_revenue",        "inp_revenue",        "inp_revenue",        4_000_000))
+    _growth_pct    = float(_r("_run_growth",         "inp_growth",         "inp_growth",                70))
+    _ebitda_margin = float(_r("_run_ebitda",         "inp_ebitda",         "inp_ebitda",               10))
+    _cash          = float(_r("_run_cash",           "inp_cash",           "inp_cash",          1_500_000))
+    _burn          = float(_r("_run_burn",           "inp_burn",           "inp_burn",                  0))
+    _sector        = str(ss.get("_run_sector") or _active.get("sector_select") or ss.get("sector_select") or "FinTech")
+    _stage         = str(ss.get("_run_stage")  or _active.get("inp_stage")    or ss.get("inp_stage")    or "Series A")
+    _geography     = str(ss.get("_run_geo")    or _active.get("inp_geo")      or ss.get("inp_geo")      or "UK")
+    _name          = str(ss.get("_run_name")   or _active.get("inp_company")  or ss.get("inp_company")  or "")
+    _tax           = float(_r("_run_tax",            "inp_tax",            "inp_tax",                   25))
+    _capex         = float(_r("_run_capex",          "inp_capex",          "inp_capex",                  5))
+    _target_margin = float(_r("_run_target_margin",  "inp_target_margin",  "inp_target_margin",         25))
+    _terminal_g    = float(_r("_run_terminal_growth","inp_terminal_growth","inp_terminal_growth",       3.0))
+    _ev_rev        = float(ss.get("_run_ev_multiple") or _active.get("inp_ev_rev_multiple") or ss.get("inp_ev_rev_multiple") or 0.0)
     print(f"[EV RUNTIME] ev_rev used = {_ev_rev}")
-    _rfr           = float(_r("_run_rfr",            "inp_rfr",                   4.2))
-    _erp           = float(_r("_run_erp",            "inp_erp",                   5.5))
-    _wacc_debt     = float(_r("_run_wacc_debt",      "inp_wacc_debt",               0))
+    _rfr           = float(_r("_run_rfr",            "inp_rfr",            "inp_rfr",                   4.2))
+    _erp           = float(_r("_run_erp",            "inp_erp",            "inp_erp",                   5.5))
+    _wacc_debt     = float(_r("_run_wacc_debt",      "inp_wacc_debt",      "inp_wacc_debt",               0))
 
     company        = _name or ss.get("inp_company", "Your company")
     _total_debt    = ss.get("inp_debt", 0)
@@ -1369,9 +1373,10 @@ def render_results() -> None:
                 st.rerun()
 
         st.markdown("<div style='height:20px'></div>", unsafe_allow_html=True)
-        _cname = st.session_state.get("inp_company", "")
-        _csector = st.session_state.get("inp_sector", "")
-        _cstage = st.session_state.get("inp_stage", "")
+        _active_p = st.session_state.get("_active_preset", {})
+        _cname   = st.session_state.get("_run_name")   or _active_p.get("inp_company")  or st.session_state.get("inp_company",  "")
+        _csector = st.session_state.get("_run_sector") or _active_p.get("sector_select") or st.session_state.get("sector_select", "")
+        _cstage  = st.session_state.get("_run_stage")  or _active_p.get("inp_stage")    or st.session_state.get("inp_stage",   "")
         if _cname:
             st.markdown(
                 f"<div style='border-top:0.5px solid #1A2035;padding:12px 8px 0;margin-top:4px;'>"

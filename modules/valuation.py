@@ -219,9 +219,15 @@ def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
 
     wacc, wacc_method = calculate_wacc(inputs, estimated_ev=proxy_ev)
     print(f"[WACC DEBUG] stage={inputs.stage}, wacc={wacc:.4f} ({wacc*100:.1f}%), method={wacc_method}")
-    # Floor WACC at 12% for revenue > £500m to prevent terminal value explosion
-    if revenue > 500_000_000:
-        wacc = max(wacc, 0.12)
+
+    # Build per-scenario WACCs then apply floors for large-revenue companies
+    wacc_base = wacc
+    wacc_cons = wacc + 0.05
+    wacc_opt  = wacc - 0.05
+    if revenue >= 500_000_000:
+        wacc_base = max(wacc_base, 0.12)
+        wacc_cons = max(wacc_cons, 0.138)
+        wacc_opt  = max(wacc_opt,  0.106)
 
     sc = dict(tax_rate=tax_rate, capex_pct=capex_pct, nwc_pct=nwc_pct,
               da_pct=da_pct, tv_method=tv_method, exit_multiple=exit_mult,
@@ -229,7 +235,7 @@ def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
 
     # Compute base-case detail for waterfall / sensitivity
     revs, ebs = _project_revenues_ebitda(revenue, growth_pct, ebitda_margin, years=proj_years)
-    eff_wacc = max(wacc, tg + 0.01)
+    eff_wacc = max(wacc_base, tg + 0.01)
     fcfs = _project_fcf(revs, ebs, capex_pct, nwc_pct, tax_rate, da_pct)
     pv_fcfs_list = [f / (1 + eff_wacc) ** (i + 1) for i, f in enumerate(fcfs)]
     pv_fcfs_sum = sum(pv_fcfs_list)
@@ -238,12 +244,12 @@ def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
 
     return {
         "low":        _dcf_scenario(revenue, growth_pct, ebitda_margin,
-                                    wacc + 0.05, tg - 0.005, scenario_adj=-0.05, **sc),
+                                    wacc_cons, tg - 0.005, scenario_adj=-0.05, **sc),
         "base":       _dcf_scenario(revenue, growth_pct, ebitda_margin,
-                                    wacc, tg, **sc),
+                                    wacc_base, tg, **sc),
         "high":       _dcf_scenario(revenue, growth_pct, ebitda_margin,
-                                    wacc - 0.05, tg + 0.005, scenario_adj=0.05, **sc),
-        "wacc":        wacc,
+                                    wacc_opt, tg + 0.005, scenario_adj=0.05, **sc),
+        "wacc":        wacc_base,
         "wacc_method": wacc_method,
         "tv_method":   tv_method,
         "terminal_growth_pct": (inputs.terminal_growth_rate_pct or 3.0),
