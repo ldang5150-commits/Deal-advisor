@@ -752,16 +752,14 @@ def _load_preset(name: str) -> None:
     for k, v in presets[name].items():
         st.session_state[k] = v
 
-    # Step 2c: Store preset as canonical source of truth for render_results()
-    _active = presets[name].copy()
-    _active["_name"] = name
-    st.session_state["_active_preset"] = _active
-
     # Step 3: Snapshot into _run_ keys immediately so results page is ready
     _snapshot_run_keys()
 
     # Step 4: Flag so on_sector_change callback skips overwriting
     st.session_state["_preset_loaded"] = True
+
+    # Step 5: Store preset as canonical source of truth for render_results()
+    st.session_state["_active_preset"] = presets[name].copy()
 
     print(f"[PRESET END] name={name}")
     print(f"[PRESET END] inp_revenue in ss = {st.session_state.get('inp_revenue')}")
@@ -1052,7 +1050,10 @@ def render_home() -> None:
         st.session_state["inp_terminal_growth"] = d.get("terminal_growth", 3.0)
         st.session_state["inp_rfr"]             = d.get("rfr", 4.2)
         st.session_state["inp_erp"]             = d.get("erp", 5.5)
-        st.session_state["inp_ev_rev_multiple"] = d.get("ev_rev_multiple", 7.0)
+        from modules.valuation import SECTOR_MULTIPLES as _SM
+        st.session_state["inp_ev_rev_multiple"] = float(
+            _SM.get(sector, _SM["Other"])["base"]
+        )
         st.session_state["defaults_initialised"] = True
 
     # ── Demo quick-load ──
