@@ -1875,13 +1875,18 @@ def render_results() -> None:
             if _stage_idx > 0:
                 fig_dil.add_trace(go.Scatter(
                     x=[_rounds[_stage_idx]], y=[_ownership[_stage_idx]],
-                    mode="markers+text",
+                    mode="markers",
                     marker=dict(color="#1D4ED8", size=14, symbol="circle"),
-                    text=["Current stage"],
-                    textposition="top right",
-                    textfont=dict(size=11, color="#64748B"),
                     showlegend=False,
                 ))
+                fig_dil.add_annotation(
+                    x=_rounds[_stage_idx], y=_ownership[_stage_idx],
+                    text="Current stage",
+                    showarrow=True, arrowhead=0, arrowcolor="#94A3B8",
+                    ax=30, ay=-30,
+                    font=dict(size=11, color="#64748B"),
+                    bgcolor="rgba(255,255,255,0.85)", borderpad=3,
+                )
             fig_dil.update_layout(
                 paper_bgcolor="#FFFFFF", plot_bgcolor="#FFFFFF",
                 height=300, margin=dict(l=0, r=0, t=20, b=0),
@@ -2003,8 +2008,9 @@ def render_results() -> None:
             fig.add_trace(go.Bar(name="Geography /20", y=names, x=geo_scores,    orientation="h", marker_color="#F97316", text=_lbl(geo_scores),    textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
             fig.add_trace(go.Bar(name="Cheque /10",    y=names, x=cheque_scores, orientation="h", marker_color="#65A30D", text=_lbl(cheque_scores), textposition="inside", insidetextanchor="middle", textfont=dict(color="white",   size=11)))
 
-            for name, total in zip(names, totals):
-                fig.add_annotation(x=total + 1, y=name, text="<b>" + str(total) + "</b>", showarrow=False, xanchor="left", font=dict(size=13, color="#1F2937"))
+            for name, ss_, st_, gs_, cs_, total in zip(names, sector_scores, stage_scores, geo_scores, cheque_scores, totals):
+                bar_end = ss_ + st_ + gs_ + cs_
+                fig.add_annotation(x=bar_end + 1.5, y=name, text="<b>" + str(total) + "</b>", showarrow=False, xanchor="left", font=dict(size=13, color="#1F2937"))
 
             fig.update_layout(
                 barmode="stack",
