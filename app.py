@@ -629,7 +629,7 @@ _WIDGET_KEYS = [
     "inp_cash", "inp_burn", "inp_tax", "inp_capex",
     "inp_target_margin", "inp_terminal_growth",
     "inp_ev_rev_multiple", "inp_rfr", "inp_erp",
-    "inp_wacc_debt", "inp_custom_wacc",
+    "inp_wacc_debt", "inp_wacc_kd", "inp_custom_wacc",
     "sector_select", "inp_stage", "inp_geo",
 ]
 
@@ -739,7 +739,14 @@ def _load_preset(name: str) -> None:
     for k in _all_to_delete:
         st.session_state.pop(k, None)
 
-    # Step 2: Write preset values directly
+    # Step 2a: Explicitly pop all numeric widget keys to force widget reinitialisation
+    for k in ["inp_revenue", "inp_growth", "inp_ebitda", "inp_cash",
+              "inp_burn", "inp_tax", "inp_capex", "inp_target_margin",
+              "inp_terminal_growth", "inp_rfr", "inp_erp",
+              "inp_wacc_kd", "inp_wacc_debt", "inp_ev_rev_multiple"]:
+        st.session_state.pop(k, None)
+
+    # Step 2b: Write preset values directly
     for k, v in presets[name].items():
         st.session_state[k] = v
 
