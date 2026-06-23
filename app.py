@@ -1585,7 +1585,7 @@ def render_results() -> None:
                 _capex_nwc = (_fcfs[0] if _fcfs else 0) - _np1
 
                 _ev_base    = _pv_fcfs + _pv_tv
-                _wf_x       = ["Revenue (Y1)", "EBITDA margin", "Tax (NOPAT)", "CapEx + NWC", "PV of FCFs", "Terminal value", "Enterprise value"]
+                _wf_x       = ["Revenue (Y1)", "EBITDA margin", "Tax (NOPAT)", "CapEx + NWC", "PV of FCFs", "Terminal value", "DCF Enterprise Value"]
                 _wf_y       = [_rv1, _eb1 - _rv1, _tax_hit, _capex_nwc, _pv_fcfs, _pv_tv, _ev_base]
                 _wf_measure = ["relative", "relative", "relative", "relative", "absolute", "relative", "total"]
 
