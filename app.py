@@ -1255,6 +1255,7 @@ def render_results() -> None:
     _target_margin = float(_r("_run_target_margin",  "inp_target_margin",         25))
     _terminal_g    = float(_r("_run_terminal_growth","inp_terminal_growth",       3.0))
     _ev_multiple   = float(_r("_run_ev_multiple",    "inp_ev_rev_multiple",       7.0))
+    print(f"[EV DEBUG] ev_rev_multiple at render time = {_ev_multiple}")
     _rfr           = float(_r("_run_rfr",            "inp_rfr",                   4.2))
     _erp           = float(_r("_run_erp",            "inp_erp",                   5.5))
     _wacc_debt     = float(_r("_run_wacc_debt",      "inp_wacc_debt",               0))
@@ -1297,6 +1298,7 @@ def render_results() -> None:
         projection_years=_projection_years_val,
         custom_ev_rev_multiple=_ev_multiple or None,
     )
+    print(f"[EV DEBUG] passed to inputs = {_inputs.custom_ev_rev_multiple}")
     _dcf   = dcf_valuation(_revenue, _growth_pct, _ebitda_margin, _inputs)
     _comps = comparable_valuation(
         _revenue, _sector,
