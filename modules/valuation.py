@@ -218,6 +218,7 @@ def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
                                 tv_method, exit_mult, years=proj_years)
 
     wacc, wacc_method = calculate_wacc(inputs, estimated_ev=proxy_ev)
+    print(f"[WACC DEBUG] stage={inputs.stage}, wacc={wacc:.4f} ({wacc*100:.1f}%), method={wacc_method}")
 
     sc = dict(tax_rate=tax_rate, capex_pct=capex_pct, nwc_pct=nwc_pct,
               da_pct=da_pct, tv_method=tv_method, exit_multiple=exit_mult,
