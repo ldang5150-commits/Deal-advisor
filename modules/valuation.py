@@ -219,6 +219,9 @@ def dcf_valuation(revenue: float, growth_pct: float, ebitda_margin: float,
 
     wacc, wacc_method = calculate_wacc(inputs, estimated_ev=proxy_ev)
     print(f"[WACC DEBUG] stage={inputs.stage}, wacc={wacc:.4f} ({wacc*100:.1f}%), method={wacc_method}")
+    # Floor WACC at 12% for revenue > £500m to prevent terminal value explosion
+    if revenue > 500_000_000:
+        wacc = max(wacc, 0.12)
 
     sc = dict(tax_rate=tax_rate, capex_pct=capex_pct, nwc_pct=nwc_pct,
               da_pct=da_pct, tv_method=tv_method, exit_multiple=exit_mult,
@@ -263,10 +266,11 @@ def comparable_valuation(revenue: float, sector: str,
     """Return low/base/high EV via revenue multiples with optional override and growth premium."""
     m = SECTOR_MULTIPLES.get(sector, SECTOR_MULTIPLES["Other"])
 
-    if custom_ev_rev_multiple and custom_ev_rev_multiple > 0:
-        base  = float(custom_ev_rev_multiple)
+    _ev_multiple = custom_ev_rev_multiple
+    if _ev_multiple and float(_ev_multiple) > 0:
+        base  = float(_ev_multiple)
         low   = base * 0.6
-        high  = base * 1.6
+        high  = base * 1.4
         source = "User-specified " + str(round(base, 1)) + "x base multiple"
     else:
         low   = m["low"]
