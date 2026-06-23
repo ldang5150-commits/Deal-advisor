@@ -1031,7 +1031,8 @@ def render_home() -> None:
     # Skipped if a preset was just loaded (_preset_loaded flag) so demo
     # company values are never overwritten by sector defaults.
     if "defaults_initialised" not in st.session_state and \
-       not st.session_state.get("_preset_loaded", False):
+       not st.session_state.get("_preset_loaded", False) and \
+       not st.session_state.get("_active_preset"):
         sector = st.session_state.get("sector_select", "FinTech")
         d = SECTOR_DEFAULTS.get(sector, SECTOR_DEFAULTS["Other"])
         for k in ["inp_revenue", "inp_growth", "inp_ebitda", "inp_cash",
